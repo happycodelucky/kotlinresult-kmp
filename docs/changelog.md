@@ -13,6 +13,22 @@ opened.
 
 <!-- changesets: the Release PR workflow inserts each new release below this line. Keep it. -->
 
+## 1.0.1 — 2026-09-27
+
+### Fixes
+
+#### Don't force consumers onto compileSdk 37 ([#5](https://github.com/happycodelucky/kotlinresult-kmp/pull/5))
+
+The Android AAR declared minCompileSdk 37 (inherited from our build's compileSdk), so Android/KMP consumers compiling against API 36 failed checkAarMetadata. It now declares 30, the library's minSdk; KotlinResult uses no Android APIs.
+
+KotlinResult 1.0.0's Android AAR declared `minCompileSdk=37`: AGP stamps the
+compileSdk a library is built with, and ours is 37 only for the Compose sample
+app. Any consumer compiling against API 36 or lower failed
+`checkAndroidMainAarMetadata` (for example wake-kmp's release build).
+
+1.0.1 declares `minCompileSdk=30`, which is the library's `minSdk`. KotlinResult
+uses no Android APIs, so nothing newer is required. There are no code changes.
+
 ## 1.0.0 — 2026-09-27
 
 ### Features
