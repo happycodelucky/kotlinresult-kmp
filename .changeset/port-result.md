@@ -8,10 +8,12 @@ The first release of KotlinResult: `kotlin.Result` for Kotlin Multiplatform,
 usable from Swift.
 
 - **`com.happycodelucky.kotlinresult.Result<T>`** wraps and delegates to
-  `kotlin.Result`. It has the stdlib API with the same names, signatures and
-  contracts: `isSuccess`, `getOrNull`, `getOrThrow`, `exceptionOrNull`, `fold`,
-  `map`, `mapCatching`, `recover`, `recoverCatching`, `onSuccess`, `onFailure`,
-  `getOrElse` and `getOrDefault`. Convert with `toResult()` / `toStdlibResult()`.
+  `kotlin.Result`. It has the stdlib API with the same names and contracts, as
+  members, so nothing needs importing beyond `Result`: `isSuccess`, `getOrNull`,
+  `getOrThrow`, `exceptionOrNull`, `fold`, `map`, `mapCatching`, `recover`,
+  `recoverCatching`, `onSuccess`, `onFailure`, `getOrElse` and `getOrDefault`.
+  `getOrElse`, `getOrDefault`, `recover` and `recoverCatching` return `T` rather
+  than any supertype of it. Convert with `toResult()` / `toStdlibResult()`.
 - **Swift sees `KotlinResult<T>`.** Build one with `init(value:)` /
   `init(failure:)`, and unwrap it with `try r.get()` or
   `let v: String = try r.get()`. `r.result(as:)` gives a `Swift.Result`. A failure

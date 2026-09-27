@@ -1,8 +1,10 @@
 /*
- * KotlinResult — conversion to and from the stdlib `kotlin.Result`.
+ * KotlinResult — conversion from the stdlib `kotlin.Result`.
  *
- * `toResult` / `toStdlibResult` move between the two freely (a [Result] is a thin
- * wrapper). Kotlin-only (`@HiddenFromObjC`).
+ * `toResult` wraps a stdlib `kotlin.Result`; its inverse is the member
+ * [Result.toStdlibResult]. This one has to be an extension (it's a conversion
+ * *from* the stdlib type), so it's the one function callers import.
+ * Kotlin-only (`@HiddenFromObjC`).
  *
  * There is deliberately no `runCatching` twin. A catch-everything block is the
  * wrong tool around coroutine code: it captures `CancellationException`, turning
@@ -28,7 +30,3 @@ import kotlin.native.HiddenFromObjC
 /** Wrap this stdlib `kotlin.Result` as a [Result]. */
 @HiddenFromObjC
 public fun <T> kotlin.Result<T>.toResult(): Result<T> = Result(this, false)
-
-/** The underlying stdlib `kotlin.Result`. */
-@HiddenFromObjC
-public fun <T> Result<T>.toStdlibResult(): kotlin.Result<T> = result

@@ -14,8 +14,11 @@ the shared Result type for our KMP libraries.
 
 - **`:kotlinresult`:** `com.happycodelucky.kotlinresult.Result<T>` — a reference
   class wrapping and delegating to `kotlin.Result` (a value class, which ObjC
-  export erases to `Any?`). Kotlin gets the stdlib `Result` API verbatim (same
-  names, signatures, `callsInPlace` contracts); Swift/ObjC see it as
+  export erases to `Any?`). Kotlin gets the stdlib `Result` API (same names,
+  `callsInPlace` contracts) as **members**, so callers import nothing but
+  `Result` — the four operators the stdlib types `<R, T : R>` (`getOrElse`,
+  `getOrDefault`, `recover`, `recoverCatching`) return `T` instead, since a
+  member can't bound on a supertype (LESSONS D-008); Swift/ObjC see it as
   **`KotlinResult`** plus the bundled Swift in `src/appleMain/swift/`
   (`get()`, `get<V>()`, `result(as:)`, `KotlinThrowable: Error`). Stdlib-only — no
   runtime dependencies.
