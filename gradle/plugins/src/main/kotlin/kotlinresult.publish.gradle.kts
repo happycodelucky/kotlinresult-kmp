@@ -60,7 +60,7 @@ mavenPublishing {
 
     pom {
         // `name` and `description` are the module build script's job.
-        url.set("https://github.com/happycodelucky/kotlinresult")
+        url.set("https://github.com/happycodelucky/kotlinresult-kmp")
         inceptionYear.set("2026")
 
         licenses {
@@ -78,9 +78,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/happycodelucky/kotlinresult")
-            connection.set("scm:git:https://github.com/happycodelucky/kotlinresult.git")
-            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/kotlinresult.git")
+            url.set("https://github.com/happycodelucky/kotlinresult-kmp")
+            connection.set("scm:git:https://github.com/happycodelucky/kotlinresult-kmp.git")
+            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/kotlinresult-kmp.git")
         }
     }
 }

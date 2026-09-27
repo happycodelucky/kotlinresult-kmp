@@ -40,7 +40,7 @@ Add this repository as a package dependency, pinned to a release tag:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/happycodelucky/kotlinresult.git", from: "{{ version }}")
+    .package(url: "https://github.com/happycodelucky/kotlinresult-kmp.git", from: "{{ version }}")
 ]
 ```
 

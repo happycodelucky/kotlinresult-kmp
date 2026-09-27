@@ -28,5 +28,5 @@ The same library ships through two channels:
 - **GitHub Releases** (via KMMBridge) for pure-Swift SPM consumers — a
   SKIE-enhanced `KotlinresultKit.xcframework` zip referenced from `Package.swift`.
 
-See [Publishing](https://github.com/happycodelucky/kotlinresult/blob/main/.github/PUBLISHING.md)
+See [Publishing](https://github.com/happycodelucky/kotlinresult-kmp/blob/main/.github/PUBLISHING.md)
 for how the two channels are produced.

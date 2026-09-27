@@ -9,9 +9,9 @@
 
 site_name: KotlinResult
 site_description: A Kotlin Multiplatform library for iOS, macOS, Android, and JVM.
-site_url: https://happycodelucky.github.io/kotlinresult/
-repo_name: happycodelucky/kotlinresult
-repo_url: https://github.com/happycodelucky/kotlinresult
+site_url: https://happycodelucky.github.io/kotlinresult-kmp/
+repo_name: happycodelucky/kotlinresult-kmp
+repo_url: https://github.com/happycodelucky/kotlinresult-kmp
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Paul Bates
 
@@ -99,7 +99,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/happycodelucky/kotlinresult
+      link: https://github.com/happycodelucky/kotlinresult-kmp
 
 # Explicit nav — never auto-discovered. Page ordering matters; this file is the truth.
 nav:
