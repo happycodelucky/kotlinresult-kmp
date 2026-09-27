@@ -102,6 +102,20 @@ kotlin {
 
         withHostTestBuilder { /* enables the androidHostTest source set */ }
 
+        // What consumers must compile against, declared rather than inherited.
+        // Left unset, AGP stamps the AAR's `minCompileSdk` with our compileSdk —
+        // 37, raised only for the Compose sample (LESSONS N-006) — so every
+        // consumer would be forced to compileSdk 37 although the library uses no
+        // Android API at all. Pinned to minSdk: nothing here needs newer.
+        aarMetadata {
+            minCompileSdk =
+                libs
+                    .findVersion("android-min-sdk")
+                    .get()
+                    .requiredVersion
+                    .toInt()
+        }
+
         // Explicit, never inherited. Left unset, AGP wires this target's
         // jvmTarget to the JDK running the build — so building on a newer JDK
         // would silently ship newer bytecode in the AAR. (This target is not a
