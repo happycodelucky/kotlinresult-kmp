@@ -55,8 +55,7 @@ allprojects {
 //
 //   * usedTransitiveDependencies → ignore. Structurally wrong on hierarchical
 //     KMP. It wants curated single deps re-declared in every leaf set —
-//     kermit's internal `kermit-core` in androidMain/jvmMain, `kotlin-test-junit`
-//     in every JVM-ish test set, `project(":kotlinresult")` in jvmTest. Splitting curated
+//     `kotlin-test-junit` in every JVM-ish test set, `project(":kotlinresult")` in jvmTest. Splitting curated
 //     deps into their transitive internals would churn the catalog (CLAUDE.md §5).
 //   * incorrectConfiguration → warn. RE-ENABLED. The api-vs-implementation
 //     over-suggestion on kotlinx.coroutines.core (DAGP issue #1700) was fixed in
@@ -69,23 +68,12 @@ allprojects {
 //     Narrowing to that single coordinate keeps the category live for new deps.
 //   * unusedDependencies → warn, excluding only the deps whose purpose DAGP
 //     structurally cannot see. Those are the wiring, not ordinary libraries:
-//       - `co.touchlab:kermit` — the convention plugin injects it into every
-//         module on purpose, so `Logger` is available in commonMain whether or
-//         not that module logs today (CLAUDE.md §5).
 //       - `:kotlinresult` — `:kotlinresult-testing` declares it as `api` to re-export the public
 //         types transitively to consumers writing `testImplementation(…-testing)`
 //         (see kotlinresult-testing/build.gradle.kts). A deliberate re-export reads as
 //         "unused" to a compile-usage analysis, permanently.
-//       - `:kotlinresult-testing` — the fakes are consumed from `:kotlinresult`'s test source sets;
-//         DAGP under-detects cross-source-set test usage on KMP (issue #1345).
-//
-// NOTE (template): turbine, kotest-assertions-core, kotest-property and atomicfu
-// WILL be reported as unused until you replace the placeholder `Greeter` with
-// real code. That advice is CORRECT — they're scaffolding for the library you
-// haven't written yet — and it clears itself as you start using them.
-// Deliberately NOT excluded: a permanent exclusion would also hide the case
-// where you genuinely never use them. These are warnings; buildHealth exits 0,
-// so CI stays green either way.
+//       - `:kotlinresult-testing` — consumed from test source sets; DAGP
+//         under-detects cross-source-set test usage on KMP (issue #1345).
 dependencyAnalysis {
     issues {
         all {
@@ -104,7 +92,6 @@ dependencyAnalysis {
             onUnusedDependencies {
                 severity("warn")
                 exclude(
-                    "co.touchlab:kermit",
                     ":kotlinresult",
                     ":kotlinresult-testing",
                 )

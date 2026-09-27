@@ -4,8 +4,8 @@
  *
  * Owns everything the modules would otherwise duplicate (CLAUDE.md §4, §5): the
  * target matrix, the apple intermediate source set, the Android library block,
- * the jvm() target, compiler options, JVM target wiring, the Kermit logging
- * baseline, and the SKIE settings that must match across modules. Per-module
+ * the jvm() target, compiler options, JVM target wiring, and the SKIE settings
+ * that must match across modules. Per-module
  * identity (framework base name, bundle id, Android namespace) is DERIVED from
  * the project name, so adding a module means applying this plugin and nothing
  * else:
@@ -129,14 +129,6 @@ kotlin {
         languageVersion.set(KotlinVersion.KOTLIN_2_4)
         apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(true)
-    }
-
-    // --- Logging baseline (CLAUDE.md §5) ------------------------------------
-    // Kermit in commonMain so every module gets multiplatform logging without
-    // repeating the dependency. `api` so consumers' Swift/Android code can reach
-    // the same Logger surface the library logs through.
-    sourceSets.commonMain.dependencies {
-        api(libs.findLibrary("kermit").get())
     }
 
     // --- Public-API / ABI validation (CLAUDE.md §8) -------------------------

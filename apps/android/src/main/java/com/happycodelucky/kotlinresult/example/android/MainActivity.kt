@@ -1,8 +1,8 @@
 /*
  * kotlinresult — Android sample entry point.
  *
- * Minimal Compose screen that calls the `:kotlinresult` library and shows the result.
- * Grow this into your real sample UI once the template is rendered.
+ * Minimal Compose screen that builds a `:kotlinresult` `Result` and shows it —
+ * the same API as `kotlin.Result`.
  */
 package com.happycodelucky.kotlinresult.example.android
 
@@ -17,7 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.happycodelucky.kotlinresult.Greeter
+import com.happycodelucky.kotlinresult.Result
+import com.happycodelucky.kotlinresult.map
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +36,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun GreetingScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = Greeter().greet())
+        Text(text = Result.success("KotlinResult").map { "Hello from $it on Android" }.getOrNull() ?: "failed")
     }
 }

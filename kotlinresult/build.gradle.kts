@@ -1,10 +1,11 @@
 /*
- * kotlinresult — :kotlinresult module (renamed to :<name> by `mise run init`).
+ * kotlinresult — :kotlinresult module.
  *
- * The headless KMP library: business logic only, no UI dependencies
- * (CLAUDE.md §1, §7). The module shape — target matrix (incl. jvm()), apple
- * intermediate source set, Android library block, compiler options, Kermit
- * baseline, SKIE settings — comes from the `kotlinresult.kmp-library`
+ * `Result<T>` (Swift: `KotlinResult<T>`), a Swift-friendly mirror of
+ * `kotlin.Result`, plus its bundled Swift (src/appleMain/swift/). Stdlib-only: no
+ * runtime dependencies. The module shape — target matrix (incl. jvm()), apple
+ * intermediate source set, Android library block, compiler options, SKIE
+ * settings — comes from the `kotlinresult.kmp-library`
  * convention plugin; Maven Central publishing comes from
  * `kotlinresult.publish`. This script keeps only what is unique to the
  * module: dependencies, the KMMBridge SPM distribution config, and POM
@@ -28,24 +29,10 @@ plugins {
 
 kotlin {
     sourceSets {
-        commonMain.dependencies {
-            // Kermit is supplied by the convention plugin (api, commonMain).
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.atomicfu)
-        }
+        // No main dependencies at all: a Result type ships with the stdlib only.
 
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
-            implementation(libs.kotest.assertions.core)
-            implementation(libs.kotest.property)
-            // The public test fakes from the sibling module.
-            implementation(project(":kotlinresult-testing"))
-        }
-
-        androidMain.dependencies {
-            implementation(libs.kotlinx.coroutines.android)
         }
 
         // androidHostTest is created by the convention plugin's
@@ -53,21 +40,24 @@ kotlin {
         // deps, so they're repeated.
         getByName("androidHostTest").dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
-            implementation(project(":kotlinresult-testing"))
         }
 
         jvmTest.dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
-            implementation(project(":kotlinresult-testing"))
         }
     }
 }
 
 skie {
+    // ON for this module (the convention plugin turns it off by default): SKIE
+    // copies src/appleMain/swift/KotlinResult+Swift.swift into the klib, so every
+    // framework that depends on and `export`s :kotlinresult compiles the Swift
+    // helpers (`get()`, `result(as:)`, KotlinThrowable: Error) into itself. The
+    // plugin's concern — bundled Swift failing where the type is module-prefixed —
+    // is exactly what the `export` requirement rules out (README, CLAUDE.md §7).
+    swiftBundling {
+        enabled.set(true)
+    }
     build {
         // Xcode 26 requires .swiftinterface files in every framework slice
         // before xcodebuild -create-xcframework will accept them (exit 70
@@ -121,8 +111,9 @@ mavenPublishing {
     pom {
         name.set("KotlinResult")
         description.set(
-            "A Kotlin Multiplatform library for iOS, macOS, Android, and JVM. " +
-                "TODO: describe what KotlinResult does.",
+            "A Swift-friendly kotlin.Result for Kotlin Multiplatform: the stdlib " +
+                "Result API in Kotlin, and KotlinResult with throwing get() / " +
+                "Swift.Result in Swift.",
         )
     }
 }

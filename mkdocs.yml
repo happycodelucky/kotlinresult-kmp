@@ -8,7 +8,7 @@
 #   .venv/bin/mkdocs build --strict   # fails on broken internal links / nav drift
 
 site_name: KotlinResult
-site_description: A Kotlin Multiplatform library for iOS, macOS, Android, and JVM.
+site_description: kotlin.Result for Kotlin Multiplatform, usable from Swift.
 site_url: https://happycodelucky.github.io/kotlinresult-kmp/
 repo_name: happycodelucky/kotlinresult-kmp
 repo_url: https://github.com/happycodelucky/kotlinresult-kmp
@@ -109,7 +109,8 @@ nav:
   - Concepts:
     - concepts/architecture.md
   - Recipes:
-    - recipes/example.md
+    - recipes/kmp-library.md
+    - recipes/cancellation.md
   - Platforms:
     - platforms/android.md
     - platforms/ios.md

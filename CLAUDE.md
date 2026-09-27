@@ -9,15 +9,21 @@ contract a contributor (human or agent) reads first. Start here, then
 
 ## 1. Scope
 
-> **TODO (fill this in):** describe what KotlinResult does — the problem it
-> solves, what's *in* the shared library and what's deliberately *not*.
+KotlinResult is **`kotlin.Result` for Kotlin Multiplatform, usable from Swift** —
+the shared Result type for our KMP libraries.
 
-- **Shared (in `:kotlinresult`):** the library's business logic. Headless — no UI
-  dependencies. Each platform app consumes the library's `StateFlow`/`SharedFlow`
-  or suspend API.
-- **Not shared:** UI. Platform apps under `apps/` have their own native UI.
-- **Modules:** `:kotlinresult` (the library) and `:kotlinresult-testing` (public test fakes +
-  helpers for consumers, e.g. a `FakeX` and a `withX { … }` helper).
+- **`:kotlinresult`:** `com.happycodelucky.kotlinresult.Result<T>` — a reference
+  class wrapping and delegating to `kotlin.Result` (a value class, which ObjC
+  export erases to `Any?`). Kotlin gets the stdlib `Result` API verbatim (same
+  names, signatures, `callsInPlace` contracts); Swift/ObjC see it as
+  **`KotlinResult`** plus the bundled Swift in `src/appleMain/swift/`
+  (`get()`, `get<V>()`, `result(as:)`, `KotlinThrowable: Error`). Stdlib-only — no
+  runtime dependencies.
+- **`:kotlinresult-testing`:** `assertSuccess()` / `assertFailure<E>()`.
+- **Not in scope:** error *classification* (fatal/non-fatal), catch-all helpers
+  (`runCatching` twins), typed-error `Result<T, E>`, anything Result doesn't do.
+  The API mirrors `kotlin.Result` exactly; divergence needs a written reason.
+- **Sample apps** (`apps/`) are demos of the API, not part of the library.
 
 ## 2. Decisions (load-bearing)
 
@@ -60,8 +66,11 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
 
 ## 5. Libraries — Kotlin-first
 
-kotlinx.* family (coroutines, atomicfu, io), **Kermit for logging** (wired into
-every module by the convention plugin — `Logger` is available in `commonMain`),
+**`:kotlinresult` has no runtime dependencies — stdlib only.** A Result type is
+depended on by every library that uses it, so it must not drag anything along;
+the template's Kermit wiring was removed from the convention plugin for that
+reason. (Test source sets may use test libraries.) Otherwise the usual picks: the
+kotlinx.* family (coroutines, atomicfu, io),
 `kotlin.time` for `Duration`/`Instant`/`Clock` (NOT `java.time` in common —
 `kotlin.time.Instant`/`Clock` are stable since 2.3.x), `kotlin.uuid.Uuid` for
 UUIDs (stable since 2.4.0 — no platform UUID types in common). For HTTP, prefer
@@ -114,7 +123,30 @@ SKIE mandatory (convention plugin configures it; `produceDistributableFramework(
 in `:kotlinresult`). `Flow`/`StateFlow` → `AsyncSequence`. Sealed types → exhaustive Swift
 enums. **`@Throws` on an `expect` must be replicated verbatim on every `actual`**,
 and a `@Throws` on a `suspend fun` must list `CancellationException`. Never
-`kotlin.Result<T>` at the boundary. Apple casing everywhere in prose, file names,
+`kotlin.Result<T>` at the boundary — that is what this library's `Result` is for.
+
+**Naming.** Kotlin `Result` (in-package, the simple name means ours, so the stdlib
+type is always written `kotlin.Result`); ObjC/Swift `KotlinResult` via
+`@ObjCName(name = "KotlinResult", swiftName = "KotlinResult")`, like `KotlinInt`.
+
+**Swift bundling is ON for `:kotlinresult`** (the convention plugin defaults it
+off). SKIE compiles the bundled Swift of *every* linked klib into each framework
+(no per-dependency opt-out — `UnpackSwiftSourcesTask`), and
+`KotlinResult+Swift.swift` compiles only where `KotlinResult` keeps its plain
+name. So **every framework that links `:kotlinresult` must `export` it** — consumer
+libraries (README), and `:kotlinresult-testing` here. Missing export ⇒
+`cannot find type 'KotlinResult' in scope` at link.
+
+**No extensions on the generic class in Swift.** Swift rejects any non-`@objc`
+member in an extension of a generic ObjC class ("cannot access the class's generic
+parameters at runtime"). Helpers go on the non-generic `AnyKotlinResult` protocol,
+whose requirements never mention `T` (`__anyValue` is the Kotlin `anyValue: Any?`,
+`@ShouldRefineInSwift`, opt-in gated by `@InternalKotlinResultApi`).
+
+**Structured concurrency.** A `Result` is a plain value: nothing is classified
+"fatal", constructing one never throws, and cancellation is never captured into
+one. No catch-all helpers (kotlinx.coroutines#1814). `get()` rethrows exactly what
+the result holds. Document, don't add, anything that would reclassify exceptions. Apple casing everywhere in prose, file names,
 and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`).
 
 ## 8. Distribution
@@ -167,11 +199,11 @@ Fill in as your library's platform needs become concrete. Common gotchas:
 
 ## 10. Testing
 
-All shared logic gets `commonTest` coverage with `runTest` virtual time (never
-`Thread.sleep`). Turbine for Flow assertions; Kotest for property tests (use
-multiplatform arbs only — `Arb.stringPattern` is JVM-only and breaks the native
-test compile). Inject a test `Clock`/`TimeSource` reading the test scheduler so
-`now` and `delay` stay in lockstep. The done gate is the full
+Every `Result` operation has a `commonTest` case checking it against the
+`kotlin.Result` operation it mirrors (`ResultTest`). The Swift half isn't covered
+by Gradle tests: after changing it or the exported surface, check the built
+framework's `.swiftinterface` and run a small Swift program linked against the
+macOS debug framework (construction, `get()`, `result(as:)`, type mismatch). The done gate is the full
 `:kotlinresult:check :kotlinresult-testing:check` (`mise run check`) — which compiles *test*
 sources for every target and runs detekt. A JVM-only run hides native-test-compile
 and detekt failures.

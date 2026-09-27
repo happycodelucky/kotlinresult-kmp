@@ -6,8 +6,5 @@
 // - Show declarations: true
 
 // Library unique name: <com.happycodelucky.kotlinresult:kotlinresult-testing>
-final class com.happycodelucky.kotlinresult.testing/FakeGreeter { // com.happycodelucky.kotlinresult.testing/FakeGreeter|null[0]
-    constructor <init>(kotlin/String = ...) // com.happycodelucky.kotlinresult.testing/FakeGreeter.<init>|<init>(kotlin.String){}[0]
-
-    final fun greet(): kotlin/String // com.happycodelucky.kotlinresult.testing/FakeGreeter.greet|greet(){}[0]
-}
+final fun <#A: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#A>).com.happycodelucky.kotlinresult.testing/assertSuccess(): #A // com.happycodelucky.kotlinresult.testing/assertSuccess|assertSuccess@com.happycodelucky.kotlinresult.Result<0:0>(){0§<kotlin.Any?>}[0]
+final inline fun <#A: reified kotlin/Throwable> (com.happycodelucky.kotlinresult/Result<*>).com.happycodelucky.kotlinresult.testing/assertFailure(): #A // com.happycodelucky.kotlinresult.testing/assertFailure|assertFailure@com.happycodelucky.kotlinresult.Result<*>(){0§<kotlin.Throwable>}[0]

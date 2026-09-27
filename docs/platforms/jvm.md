@@ -4,8 +4,6 @@ title: JVM
 
 # JVM
 
-TODO: document anything JVM / desktop consumers need beyond the dependency.
-
-Note the minimum supported JDK, any platform-specific runtime considerations
-(threading model, file-system access, headless servers), and anything that
-differs from the Android/Apple targets.
+Nothing beyond the dependency — the stdlib is the only runtime dependency. Java
+callers use `Result.success(x)` / `Result.failure(e)` (`@JvmStatic`); the
+operators are extension functions in `ResultOperatorsKt`.

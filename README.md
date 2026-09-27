@@ -7,29 +7,86 @@
 ![Kotlin 2.4](https://img.shields.io/badge/Kotlin-2.4-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)
 
-> **TODO:** one-paragraph description of what KotlinResult does, behind one
-> Kotlin Multiplatform API for iOS, macOS, Android, and the JVM.
+`kotlin.Result` for Kotlin Multiplatform, usable from Swift.
 
-UI is out of scope — KotlinResult is the headless `:kotlinresult` KMP module
-(see [`CLAUDE.md`](CLAUDE.md) §1). Each platform app consumes it natively; see
-[`apps/`](apps/) for samples on every platform.
+`kotlin.Result` is a value class, and Kotlin/Native's Objective-C export erases
+it to an untyped `Any?`, so a KMP library can't return one to Swift. KotlinResult
+is `com.happycodelucky.kotlinresult.Result<T>`: a thin reference class that wraps
+`kotlin.Result` and forwards to it.
+
+- **Kotlin** gets the stdlib `Result` API and behaviour verbatim (`isSuccess`,
+  `getOrThrow`, `fold`, `map`, `recover`, `onFailure`, … with the stdlib's
+  signatures and contracts), plus `toStdlibResult()` / `toResult()`.
+- **Swift** sees it as **`KotlinResult<T>`** (next to `KotlinInt`, `KotlinUnit`, …,
+  never shadowing Swift's `Result`) with bundled Swift helpers: `try r.get()`,
+  `let s: String = try r.get()`, `r.result(as:)` → `Swift.Result`. A failure is
+  thrown as the Kotlin exception itself, so Swift catches it by class and
+  switches exhaustively with SKIE's `onEnum(of:)`.
+- **Structured concurrency:** a `Result` is a plain value — nothing is classified
+  "fatal", and cancellation is never captured. Let `CancellationException`
+  propagate and SKIE delivers it to Swift as `CancellationError`.
+- **No runtime dependencies** beyond the Kotlin stdlib.
 
 ## Modules
 
 | Module | Coordinate | What it is |
 |--------|-----------|-----------|
-| `:kotlinresult` | `com.happycodelucky.kotlinresult:kotlinresult` | The library. |
-| `:kotlinresult-testing` | `com.happycodelucky.kotlinresult:kotlinresult-testing` | Public test fakes + helpers for consumers. |
+| `:kotlinresult` | `com.happycodelucky.kotlinresult:kotlinresult` | `Result<T>` + its bundled Swift. |
+| `:kotlinresult-testing` | `com.happycodelucky.kotlinresult:kotlinresult-testing` | `assertSuccess()` / `assertFailure<E>()` for tests. |
 
 ## Quick example
 
 ```kotlin
-import com.happycodelucky.kotlinresult.Greeter
+import com.happycodelucky.kotlinresult.Result
 
-println(Greeter().greet())   // "Hello from <platform>"
+sealed class PortException(message: String) : Exception(message) {
+    class NotANumber(val text: String) : PortException("not a number: $text")
+    class OutOfRange(val port: Int) : PortException("out of range: $port")
+}
+
+fun parsePort(text: String): Result<Int> {
+    val port = text.toIntOrNull() ?: return Result.failure(PortException.NotANumber(text))
+    return if (port in 0..65535) Result.success(port) else Result.failure(PortException.OutOfRange(port))
+}
+
+parsePort("8080").map { it + 1 }.getOrDefault(0)  // 8081
 ```
 
-Replace the placeholder `Greeter` with your real API.
+```swift
+do {
+    let port: Int = try parsePort(text: "8080").get()
+} catch let e as PortException {
+    switch onEnum(of: e) {
+    case .notANumber(let x): print("not a number: \(x.text)")
+    case .outOfRange(let x): print("out of range: \(x.port)")
+    }
+}
+```
+
+## Using it from a KMP library (required setup)
+
+Depend on it with `api` (it's in your public API) and **`export` it into every
+Apple framework that links it**:
+
+```kotlin
+kotlin {
+    sourceSets.commonMain.dependencies { api("com.happycodelucky.kotlinresult:kotlinresult:<version>") }
+
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
+            export("com.happycodelucky.kotlinresult:kotlinresult:<version>")
+        }
+    }
+}
+```
+
+The Swift helpers ship as SKIE-bundled Swift inside the klib, and SKIE compiles
+the bundled Swift of *every* linked klib into your framework. That file only
+compiles where `KotlinResult` keeps its plain name — i.e. where the module is
+exported. Without the export the framework link fails with
+`cannot find type 'KotlinResult' in scope` in `bundled.kotlinresult.KotlinResult+Swift.swift`.
+Your framework needs SKIE; don't declare your own `extension KotlinThrowable: Error`
+(this library provides it).
 
 ## Install
 

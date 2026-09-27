@@ -1,5 +1,43 @@
-public final class com/happycodelucky/kotlinresult/Greeter {
-	public fun <init> ()V
-	public final fun greet ()Ljava/lang/String;
+public abstract interface annotation class com/happycodelucky/kotlinresult/InternalKotlinResultApi : java/lang/annotation/Annotation {
+}
+
+public final class com/happycodelucky/kotlinresult/Result {
+	public static final field Companion Lcom/happycodelucky/kotlinresult/Result$Companion;
+	public fun <init> (Ljava/lang/Object;)V
+	public fun <init> (Ljava/lang/Throwable;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun exceptionOrNull ()Ljava/lang/Throwable;
+	public static final fun failure (Ljava/lang/Throwable;)Lcom/happycodelucky/kotlinresult/Result;
+	public final fun getAnyValue ()Ljava/lang/Object;
+	public final fun getOrNull ()Ljava/lang/Object;
+	public final fun getOrThrow ()Ljava/lang/Object;
+	public final fun getResult-d1pmJ48 ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public final fun isFailure ()Z
+	public final fun isSuccess ()Z
+	public static final fun success (Ljava/lang/Object;)Lcom/happycodelucky/kotlinresult/Result;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/happycodelucky/kotlinresult/Result$Companion {
+	public final fun failure (Ljava/lang/Throwable;)Lcom/happycodelucky/kotlinresult/Result;
+	public final fun success (Ljava/lang/Object;)Lcom/happycodelucky/kotlinresult/Result;
+}
+
+public final class com/happycodelucky/kotlinresult/ResultConversionsKt {
+	public static final fun toResult (Ljava/lang/Object;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun toStdlibResult (Lcom/happycodelucky/kotlinresult/Result;)Ljava/lang/Object;
+}
+
+public final class com/happycodelucky/kotlinresult/ResultOperatorsKt {
+	public static final fun fold (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun getOrDefault (Lcom/happycodelucky/kotlinresult/Result;Ljava/lang/Object;)Ljava/lang/Object;
+	public static final fun getOrElse (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static final fun map (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun mapCatching (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun onFailure (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun onSuccess (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun recover (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
+	public static final fun recoverCatching (Lcom/happycodelucky/kotlinresult/Result;Lkotlin/jvm/functions/Function1;)Lcom/happycodelucky/kotlinresult/Result;
 }
 

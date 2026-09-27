@@ -24,27 +24,31 @@ kotlin {
             // `api` so consumers writing `testImplementation(<name>-testing)` get
             // the public `:kotlinresult` types transitively — they will assert against them.
             api(project(":kotlinresult"))
-
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.atomicfu)
         }
 
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
         }
 
         getByName("androidHostTest").dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
         }
 
         jvmTest.dependencies {
             implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
+        }
+    }
+}
+
+// Export :kotlinresult into this module's framework. SKIE compiles the bundled
+// Swift of every linked klib — including :kotlinresult's KotlinResult+Swift.swift
+// — into each framework, and that file only compiles where `KotlinResult` keeps
+// its plain Swift name, i.e. where :kotlinresult is exported. Every framework that
+// links :kotlinresult needs this (README "Using it from a KMP library").
+kotlin {
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
+            export(project(":kotlinresult"))
         }
     }
 }
@@ -53,8 +57,8 @@ mavenPublishing {
     pom {
         name.set("KotlinResult Testing")
         description.set(
-            "Test fakes and helpers for the kotlinresult library: scriptable " +
-                "doubles for consumers writing tests against the public API.",
+            "Test assertions for the kotlinresult library: assertSuccess() / " +
+                "assertFailure<E>() for code that returns a KotlinResult Result.",
         )
     }
 }

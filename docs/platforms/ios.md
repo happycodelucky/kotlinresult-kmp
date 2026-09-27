@@ -4,9 +4,8 @@ title: iOS
 
 # iOS
 
-TODO: document anything iOS consumers need beyond adding the package.
-
-Call out required entitlements and `Info.plist` keys — for example local
-network access (`NSLocalNetworkUsageDescription`) for discovery, or App
-Transport Security (ATS) exceptions if the library talks to non-TLS endpoints.
-Note the minimum deployment target.
+`KotlinResult` reaches iOS through the Apple framework of the KMP library that
+exports it (or `KotlinresultKit.xcframework` via SPM). No entitlements or
+`Info.plist` keys are needed. See [Use it from a KMP library](../recipes/kmp-library.md)
+for the required `export`, and [Getting started](../getting-started.md) for the
+Swift API.

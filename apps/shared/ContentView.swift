@@ -2,11 +2,10 @@
 //  ContentView.swift
 //  kotlinresult — shared SwiftUI, used by both the iOS and macOS samples.
 //
-//  Demonstrates consuming the Kotlin Multiplatform library from Swift via the
-//  SKIE-enhanced XCFramework. `import KotlinresultKit` brings in the generated
-//  Swift API; `Greeter` is the placeholder Kotlin class. SKIE bridges Kotlin
-//  suspend functions to async/await and Flow to AsyncSequence — grow this view
-//  into your real sample once the template is rendered.
+//  Demonstrates the Swift side of KotlinResult: `import KotlinresultKit` brings in
+//  `KotlinResult` plus the bundled Swift helpers — `init(value:)` /
+//  `init(failure:)` to build one, `get()` to unwrap it (throwing the Kotlin
+//  exception itself on failure), and `result(as:)` for a `Swift.Result`.
 //
 
 import SwiftUI
@@ -26,9 +25,14 @@ struct ContentView: View {
         }
         .padding()
         .onAppear {
-            // Call the Kotlin library. `Greeter` and `greet()` come from the
-            // generated KotlinresultKit module.
-            greeting = Greeter().greet()
+            let ok = KotlinResult<NSString>(value: "Hello from KotlinResult")
+            let failed = KotlinResult<NSString>(failure: KotlinThrowable(message: "boom"))
+
+            let value: String = (try? ok.get()) ?? "…"
+            switch failed.result(as: String.self) {
+            case .success(let text): greeting = "\(value)\n\(text)"
+            case .failure(let error): greeting = "\(value)\nfailed: \(error.localizedDescription)"
+            }
         }
     }
 }
