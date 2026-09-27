@@ -238,7 +238,7 @@ versionCatalogUpdate {
     }
     pin {
         // Kotlin is bounded above by SKIE (CLAUDE.md §3): a Kotlin bump is a
-        // manual, SKIE-paired change — the same policy renovate.json5 encodes.
+        // manual, SKIE-paired change.
         // Pinning the `kotlin` ref also holds the compose-compiler plugin, which
         // versions in lockstep with it. To bump Kotlin, edit the catalog by hand
         // once SKIE's changelog lists support; this task only reports it.
