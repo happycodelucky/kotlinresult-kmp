@@ -36,6 +36,11 @@ is `com.happycodelucky.kotlinresult.Result<T>`: a thin reference class that wrap
 
 ## Quick example
 
+### Defining an API (Kotlin, `commonMain`)
+
+Return a `Result<T>`, failing with the specific exceptions you handle — ideally a
+sealed hierarchy, so callers can match every case:
+
 ```kotlin
 import com.happycodelucky.kotlinresult.Result
 
@@ -48,13 +53,37 @@ fun parsePort(text: String): Result<Int> {
     val port = text.toIntOrNull() ?: return Result.failure(PortException.NotANumber(text))
     return if (port in 0..65535) Result.success(port) else Result.failure(PortException.OutOfRange(port))
 }
-
-parsePort("8080").map { it + 1 }.getOrDefault(0)  // 8081
 ```
+
+### Using it from Kotlin
+
+The same API as `kotlin.Result`:
+
+```kotlin
+import com.happycodelucky.kotlinresult.getOrDefault
+import com.happycodelucky.kotlinresult.onFailure
+import com.happycodelucky.kotlinresult.onSuccess
+
+parsePort("8080")
+    .onSuccess { port -> println("listening on $port") }
+    .onFailure { e ->
+        when (e as PortException) {
+            is PortException.NotANumber -> println("not a number: ${e.text}")
+            is PortException.OutOfRange -> println("out of range: ${e.port}")
+        }
+    }
+
+val port = parsePort(input).getOrDefault(8080)
+```
+
+### Using it from Swift
+
+`get()` returns the value (name its type) or throws the Kotlin exception itself:
 
 ```swift
 do {
     let port: Int = try parsePort(text: "8080").get()
+    print("listening on \(port)")
 } catch let e as PortException {
     switch onEnum(of: e) {
     case .notANumber(let x): print("not a number: \(x.text)")
