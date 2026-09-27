@@ -9,7 +9,6 @@
 package com.happycodelucky.kotlinresult.cli
 
 import com.happycodelucky.kotlinresult.Result
-import com.happycodelucky.kotlinresult.fold
 
 private const val MAX_PORT = 65_535
 

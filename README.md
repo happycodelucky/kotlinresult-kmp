@@ -14,9 +14,12 @@ it to an untyped `Any?`, so a KMP library can't return one to Swift. KotlinResul
 is `com.happycodelucky.kotlinresult.Result<T>`: a thin reference class that wraps
 `kotlin.Result` and forwards to it.
 
-- **Kotlin** gets the stdlib `Result` API and behaviour verbatim (`isSuccess`,
+- **Kotlin** gets the stdlib `Result` API and behaviour (`isSuccess`,
   `getOrThrow`, `fold`, `map`, `recover`, `onFailure`, … with the stdlib's
-  signatures and contracts), plus `toStdlibResult()` / `toResult()`.
+  contracts) as **members** — no per-operator imports — plus `toStdlibResult()` /
+  `toResult()`. One difference: `getOrElse`, `getOrDefault`, `recover` and
+  `recoverCatching` return `T`, not any supertype of it (a member can't express
+  that bound); widen with `fold` or `getOrNull() ?: default`.
 - **Swift** sees it as **`KotlinResult<T>`** (next to `KotlinInt`, `KotlinUnit`, …,
   never shadowing Swift's `Result`) with bundled Swift helpers: `try r.get()`,
   `let s: String = try r.get()`, `r.result(as:)` → `Swift.Result`. A failure is
@@ -57,13 +60,10 @@ fun parsePort(text: String): Result<Int> {
 
 ### Using it from Kotlin
 
-The same API as `kotlin.Result`:
+The same API as `kotlin.Result` — every operator is a member, so there's nothing
+to import beyond `Result` itself:
 
 ```kotlin
-import com.happycodelucky.kotlinresult.getOrDefault
-import com.happycodelucky.kotlinresult.onFailure
-import com.happycodelucky.kotlinresult.onSuccess
-
 parsePort("8080")
     .onSuccess { port -> println("listening on $port") }
     .onFailure { e ->

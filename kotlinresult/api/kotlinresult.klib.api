@@ -25,10 +25,20 @@ final class <#A: out kotlin/Any?> com.happycodelucky.kotlinresult/Result { // co
 
     final fun equals(kotlin/Any?): kotlin/Boolean // com.happycodelucky.kotlinresult/Result.equals|equals(kotlin.Any?){}[0]
     final fun exceptionOrNull(): kotlin/Throwable? // com.happycodelucky.kotlinresult/Result.exceptionOrNull|exceptionOrNull(){}[0]
+    final fun getOrDefault(#A): #A // com.happycodelucky.kotlinresult/Result.getOrDefault|getOrDefault(1:0){}[0]
     final fun getOrNull(): #A? // com.happycodelucky.kotlinresult/Result.getOrNull|getOrNull(){}[0]
     final fun getOrThrow(): #A // com.happycodelucky.kotlinresult/Result.getOrThrow|getOrThrow(){}[0]
     final fun hashCode(): kotlin/Int // com.happycodelucky.kotlinresult/Result.hashCode|hashCode(){}[0]
+    final fun toStdlibResult(): kotlin/Result<#A> // com.happycodelucky.kotlinresult/Result.toStdlibResult|toStdlibResult(){}[0]
     final fun toString(): kotlin/String // com.happycodelucky.kotlinresult/Result.toString|toString(){}[0]
+    final inline fun <#A1: kotlin/Any?> fold(kotlin/Function1<#A, #A1>, kotlin/Function1<kotlin/Throwable, #A1>): #A1 // com.happycodelucky.kotlinresult/Result.fold|fold(kotlin.Function1<1:0,0:0>;kotlin.Function1<kotlin.Throwable,0:0>){0§<kotlin.Any?>}[0]
+    final inline fun <#A1: kotlin/Any?> map(kotlin/Function1<#A, #A1>): com.happycodelucky.kotlinresult/Result<#A1> // com.happycodelucky.kotlinresult/Result.map|map(kotlin.Function1<1:0,0:0>){0§<kotlin.Any?>}[0]
+    final inline fun <#A1: kotlin/Any?> mapCatching(kotlin/Function1<#A, #A1>): com.happycodelucky.kotlinresult/Result<#A1> // com.happycodelucky.kotlinresult/Result.mapCatching|mapCatching(kotlin.Function1<1:0,0:0>){0§<kotlin.Any?>}[0]
+    final inline fun getOrElse(kotlin/Function1<kotlin/Throwable, #A>): #A // com.happycodelucky.kotlinresult/Result.getOrElse|getOrElse(kotlin.Function1<kotlin.Throwable,1:0>){}[0]
+    final inline fun onFailure(kotlin/Function1<kotlin/Throwable, kotlin/Unit>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/Result.onFailure|onFailure(kotlin.Function1<kotlin.Throwable,kotlin.Unit>){}[0]
+    final inline fun onSuccess(kotlin/Function1<#A, kotlin/Unit>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/Result.onSuccess|onSuccess(kotlin.Function1<1:0,kotlin.Unit>){}[0]
+    final inline fun recover(kotlin/Function1<kotlin/Throwable, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/Result.recover|recover(kotlin.Function1<kotlin.Throwable,1:0>){}[0]
+    final inline fun recoverCatching(kotlin/Function1<kotlin/Throwable, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/Result.recoverCatching|recoverCatching(kotlin.Function1<kotlin.Throwable,1:0>){}[0]
 
     final object Companion { // com.happycodelucky.kotlinresult/Result.Companion|null[0]
         final fun <#A2: kotlin/Any?> failure(kotlin/Throwable): com.happycodelucky.kotlinresult/Result<#A2> // com.happycodelucky.kotlinresult/Result.Companion.failure|failure(kotlin.Throwable){0§<kotlin.Any?>}[0]
@@ -36,14 +46,4 @@ final class <#A: out kotlin/Any?> com.happycodelucky.kotlinresult/Result { // co
     }
 }
 
-final fun <#A: kotlin/Any?, #B: #A> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/getOrDefault(#A): #A // com.happycodelucky.kotlinresult/getOrDefault|getOrDefault@com.happycodelucky.kotlinresult.Result<0:1>(0:0){0§<kotlin.Any?>;1§<0:0>}[0]
-final fun <#A: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#A>).com.happycodelucky.kotlinresult/toStdlibResult(): kotlin/Result<#A> // com.happycodelucky.kotlinresult/toStdlibResult|toStdlibResult@com.happycodelucky.kotlinresult.Result<0:0>(){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> (kotlin/Result<#A>).com.happycodelucky.kotlinresult/toResult(): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/toResult|toResult@kotlin.Result<0:0>(){0§<kotlin.Any?>}[0]
-final inline fun <#A: kotlin/Any?, #B: #A> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/getOrElse(kotlin/Function1<kotlin/Throwable, #A>): #A // com.happycodelucky.kotlinresult/getOrElse|getOrElse@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<kotlin.Throwable,0:0>){0§<kotlin.Any?>;1§<0:0>}[0]
-final inline fun <#A: kotlin/Any?, #B: #A> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/recover(kotlin/Function1<kotlin/Throwable, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/recover|recover@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<kotlin.Throwable,0:0>){0§<kotlin.Any?>;1§<0:0>}[0]
-final inline fun <#A: kotlin/Any?, #B: #A> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/recoverCatching(kotlin/Function1<kotlin/Throwable, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/recoverCatching|recoverCatching@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<kotlin.Throwable,0:0>){0§<kotlin.Any?>;1§<0:0>}[0]
-final inline fun <#A: kotlin/Any?, #B: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/fold(kotlin/Function1<#B, #A>, kotlin/Function1<kotlin/Throwable, #A>): #A // com.happycodelucky.kotlinresult/fold|fold@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<0:1,0:0>;kotlin.Function1<kotlin.Throwable,0:0>){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]
-final inline fun <#A: kotlin/Any?, #B: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/map(kotlin/Function1<#B, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/map|map@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<0:1,0:0>){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]
-final inline fun <#A: kotlin/Any?, #B: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#B>).com.happycodelucky.kotlinresult/mapCatching(kotlin/Function1<#B, #A>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/mapCatching|mapCatching@com.happycodelucky.kotlinresult.Result<0:1>(kotlin.Function1<0:1,0:0>){0§<kotlin.Any?>;1§<kotlin.Any?>}[0]
-final inline fun <#A: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#A>).com.happycodelucky.kotlinresult/onFailure(kotlin/Function1<kotlin/Throwable, kotlin/Unit>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/onFailure|onFailure@com.happycodelucky.kotlinresult.Result<0:0>(kotlin.Function1<kotlin.Throwable,kotlin.Unit>){0§<kotlin.Any?>}[0]
-final inline fun <#A: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#A>).com.happycodelucky.kotlinresult/onSuccess(kotlin/Function1<#A, kotlin/Unit>): com.happycodelucky.kotlinresult/Result<#A> // com.happycodelucky.kotlinresult/onSuccess|onSuccess@com.happycodelucky.kotlinresult.Result<0:0>(kotlin.Function1<0:0,kotlin.Unit>){0§<kotlin.Any?>}[0]

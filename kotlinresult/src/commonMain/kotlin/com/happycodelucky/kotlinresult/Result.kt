@@ -9,8 +9,9 @@
  * not reachable from Kotlin/Native at all.
  *
  * So [Result] is an ordinary (reference) class that *wraps* a `kotlin.Result` and
- * forwards to it: Kotlin gets the stdlib `Result` API and semantics verbatim (see
- * ResultOperators.kt, and [toResult] / [toStdlibResult] to convert), and Swift
+ * forwards to it: Kotlin gets the stdlib `Result` API and semantics (every
+ * operator is a member, so no imports are needed; [toResult] / [toStdlibResult]
+ * convert), and Swift
  * gets a real class it can hold — named `KotlinResult` there, alongside
  * `KotlinInt`, `KotlinUnit` and the other Kotlin types, so it never shadows
  * Swift's own `Result`.
@@ -27,11 +28,19 @@
  * (`Swift.Result`). No per-function or per-error Swift is needed: a library
  * returns `Result<T>` from commonMain and fails with its own sealed exception
  * hierarchy, which SKIE renders for `onEnum(of:)`.
+ *
+ * ExperimentalContracts opt-in: `callsInPlace` is declared exactly where the
+ * stdlib `Result` operators declare it (getOrElse, fold, map, recover, onSuccess,
+ * onFailure — not the *Catching ones), so Kotlin's flow analysis treats [Result]
+ * lambdas like `kotlin.Result` ones. Rollback: delete the `contract` blocks.
  */
-@file:OptIn(ExperimentalObjCRefinement::class, ExperimentalObjCName::class)
+@file:OptIn(ExperimentalObjCRefinement::class, ExperimentalObjCName::class, ExperimentalContracts::class)
 
 package com.happycodelucky.kotlinresult
 
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.experimental.ExperimentalObjCName
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.jvm.JvmStatic
@@ -44,9 +53,15 @@ import kotlin.native.ShouldRefineInSwift
  * [Throwable] — `kotlin.Result`, in a form Swift can consume (as `KotlinResult`).
  *
  * Every operation delegates to an underlying `kotlin.Result`, so behavior is the
- * stdlib's exactly. The transforming operators (`map`, `fold`, `onFailure`, …)
- * are extensions with the stdlib's signatures; [toStdlibResult] returns the
- * underlying `kotlin.Result` when an API wants the stdlib type.
+ * stdlib's exactly. The operators (`map`, `fold`, `onFailure`, …) are **members**
+ * — the stdlib's are extensions, but package `kotlin` is imported by default and
+ * ours isn't, so members spare callers an import per operator. Five keep the
+ * stdlib signature exactly; [getOrElse], [getOrDefault], [recover] and
+ * [recoverCatching] take and return `T` where the stdlib allows any supertype
+ * (`<R, T : R>`), because a member can't declare a lower bound on the class's
+ * type parameter. Widen with [fold] or `getOrNull() ?: default` instead.
+ * [toStdlibResult] returns the underlying `kotlin.Result` when an API wants the
+ * stdlib type.
  *
  * ```kotlin
  * fun parsePort(text: String): Result<Int> =
@@ -85,6 +100,7 @@ import kotlin.native.ShouldRefineInSwift
  * ```
  */
 @ObjCName(name = "KotlinResult", swiftName = "KotlinResult")
+@Suppress("TooManyFunctions") // Mirrors the kotlin.Result API one-for-one; splitting it defeats the point.
 public class Result<out T> internal constructor(
     @PublishedApi internal val result: kotlin.Result<T>,
     // Unused; disambiguates this constructor from `constructor(value: T)`, which
@@ -130,6 +146,104 @@ public class Result<out T> internal constructor(
      */
     @HiddenFromObjC
     public fun getOrThrow(): T = result.getOrThrow()
+
+    /** The underlying stdlib `kotlin.Result`. The inverse of [toResult]. */
+    @HiddenFromObjC
+    public fun toStdlibResult(): kotlin.Result<T> = result
+
+    // --- Operators ----------------------------------------------------------
+    // Members delegating to the stdlib `kotlin.Result` operators, all hidden
+    // from Swift: most take Kotlin lambdas, which bridge poorly, and Swift
+    // converts once with the bundled `result(as:)` and uses `Swift.Result`'s own
+    // operators.
+
+    /**
+     * The value, or [onFailure]'s result for the exception. Same as
+     * `kotlin.Result.getOrElse`, except [onFailure] returns [T] rather than any
+     * supertype (see the class docs).
+     */
+    @HiddenFromObjC
+    public inline fun getOrElse(onFailure: (exception: Throwable) -> @UnsafeVariance T): T {
+        contract { callsInPlace(onFailure, InvocationKind.AT_MOST_ONCE) }
+        return result.getOrElse(onFailure)
+    }
+
+    /**
+     * The value, or [defaultValue] on failure. Same as `kotlin.Result.getOrDefault`,
+     * except [defaultValue] is a [T] rather than any supertype (see the class docs).
+     */
+    @HiddenFromObjC
+    public fun getOrDefault(defaultValue: @UnsafeVariance T): T = result.getOrDefault(defaultValue)
+
+    /** [onSuccess] of the value or [onFailure] of the exception. Same as `kotlin.Result.fold`. */
+    @HiddenFromObjC
+    public inline fun <R> fold(
+        onSuccess: (value: T) -> R,
+        onFailure: (exception: Throwable) -> R,
+    ): R {
+        contract {
+            callsInPlace(onSuccess, InvocationKind.AT_MOST_ONCE)
+            callsInPlace(onFailure, InvocationKind.AT_MOST_ONCE)
+        }
+        return result.fold(onSuccess, onFailure)
+    }
+
+    /** Transform the value; a failure passes through. Same as `kotlin.Result.map`. */
+    @HiddenFromObjC
+    public inline fun <R> map(transform: (value: T) -> R): Result<R> {
+        contract { callsInPlace(transform, InvocationKind.AT_MOST_ONCE) }
+        return result.map(transform).toResult()
+    }
+
+    /**
+     * Like [map], but an exception from [transform] becomes a failure. Same as
+     * `kotlin.Result.mapCatching` — including that it captures *every* exception,
+     * so don't call suspending code in [transform] (a cancellation would become a
+     * failure).
+     */
+    @HiddenFromObjC
+    public inline fun <R> mapCatching(transform: (value: T) -> R): Result<R> {
+        val caught = result.mapCatching(transform)
+        return caught.toResult()
+    }
+
+    /**
+     * Turn a failure into a success; a success passes through. Same as
+     * `kotlin.Result.recover`, except [transform] returns [T] rather than any
+     * supertype (see the class docs).
+     */
+    @HiddenFromObjC
+    public inline fun recover(transform: (exception: Throwable) -> @UnsafeVariance T): Result<T> {
+        contract { callsInPlace(transform, InvocationKind.AT_MOST_ONCE) }
+        return result.recover(transform).toResult()
+    }
+
+    /**
+     * Like [recover], but an exception from [transform] becomes a failure. Same as
+     * `kotlin.Result.recoverCatching` (returning [T], as [recover] does) — and,
+     * like it, captures every exception: keep suspending code out of [transform].
+     */
+    @HiddenFromObjC
+    public inline fun recoverCatching(transform: (exception: Throwable) -> @UnsafeVariance T): Result<T> {
+        val caught = result.recoverCatching(transform)
+        return caught.toResult()
+    }
+
+    /** Run [action] on the exception if this is a failure; returns this. Same as `kotlin.Result.onFailure`. */
+    @HiddenFromObjC
+    public inline fun onFailure(action: (exception: Throwable) -> Unit): Result<T> {
+        contract { callsInPlace(action, InvocationKind.AT_MOST_ONCE) }
+        result.onFailure(action)
+        return this
+    }
+
+    /** Run [action] on the value if this is a success; returns this. Same as `kotlin.Result.onSuccess`. */
+    @HiddenFromObjC
+    public inline fun onSuccess(action: (value: T) -> Unit): Result<T> {
+        contract { callsInPlace(action, InvocationKind.AT_MOST_ONCE) }
+        result.onSuccess(action)
+        return this
+    }
 
     /**
      * The success value with its static type erased, for the bundled Swift.
