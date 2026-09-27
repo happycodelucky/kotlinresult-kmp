@@ -247,6 +247,11 @@ run = "python3 scripts/changeset.py new"
 description = "Pending changesets, the next version they add up to, and a preview of its changelog entry."
 run = "python3 scripts/changeset.py status"
 
+[tasks."changeset:scope"]
+description = "Which files this branch changes since origin/main, in release scope (.changeset/config.toml) or not — whether the PR needs a changeset."
+# Pass paths to classify them instead, or --since REF for another base.
+run = "python3 scripts/changeset.py scope"
+
 [tasks."changeset:check"]
 description = "Validate every pending changeset — the PR check runs this (plus: the PR must add one)."
 run = "python3 scripts/changeset.py check"

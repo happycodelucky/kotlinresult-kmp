@@ -171,7 +171,8 @@ Two channels, non-overlapping:
 `.github/PUBLISHING.md`; LESSONS D-001, N-009, N-010). Every PR that reaches consumers adds a changeset
 (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then
 the full note in place of its Unfilled callout); the Changeset PR check enforces
-it (label `no-changeset` to opt out). A changeset's `change` is the source of
+it for any PR that changes a file in release scope — `include`/`exclude` globs in
+`.changeset/config.toml` (label `no-changeset` to opt out). A changeset's `change` is the source of
 truth for the version — the author's call, which neither the PR nor tooling
 overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it
 bumps `version=` in `gradle.properties` (the single source of the version),
@@ -236,7 +237,8 @@ and detekt failures.
    restates it. The usual reading — removed/renamed public API is `major` (even
    while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a
    different level is the author's call (say why in the body). Docs/CI/test-only
-   PRs get the `no-changeset` label.
+   PRs are out of release scope and need none (`mise run changeset:scope`);
+   label an in-scope PR that still reaches no consumer `no-changeset`.
 8. Done when `mise run check` passes AND `:kotlinresult:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
