@@ -86,9 +86,10 @@ android-compile-sdk = "37"
 # The compileSdk CONSUMERS must use — written into the AAR's aar-metadata as
 # minCompileSdk (convention plugin). Decoupled from android-compile-sdk above, so
 # the sample's need for 37 isn't forced on every consumer (LESSONS B-001).
-# 30 = minSdk: the library uses no Android API, so nothing needs newer. Raise it
-# only if the public API exposes newer Android types.
-android-min-compile-sdk = "30"
+# Policy: roughly the API level from ~3 years back. 34 = Android 14 (2023), so
+# the library can build on newer Android APIs. Raise it only if the public API
+# exposes newer Android types.
+android-min-compile-sdk = "34"
 # arm64-v8a only (CLAUDE.md §4).
 android-min-sdk = "30"
 # Bytecode level for the android + jvm targets (read by the convention plugin).

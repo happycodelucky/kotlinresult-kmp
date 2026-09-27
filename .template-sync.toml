@@ -170,7 +170,7 @@ reason = "Template placeholder test helpers; :kotlinresult-testing carries asser
 [[decision]]
 change = "f5418f5 Consumer-friendly defaults: repo name, AAR compile floor, private Kermit"
 status = "adapted"
-reason = "Repo URLs and AAR floor landed here first (268e4f2, 46f6609). Took the android-min-compile-sdk key at 30 (shipped 1.0.1 value, not 34) and the bundling comment; Kermit N/A (stdlib-only); init --repo is scaffolding (render map gained __REPO__)."
+reason = "Repo URLs and AAR floor landed here first (268e4f2, 46f6609). Took the android-min-compile-sdk key (34, as the template) and the bundling comment; Kermit N/A (stdlib-only); init --repo is scaffolding (render map gained __REPO__)."
 synced = "2026-09-27"
 
 [[decision]]
