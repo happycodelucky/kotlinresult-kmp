@@ -77,7 +77,7 @@ description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `c
 # The samples are excluded from lint/check (demo scaffolding, not shipped code),
 # but they must still COMPILE: AndroidX AARs impose compileSdk floors
 # (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
-# runs this. See .claude/lessons/LESSONS.md N-006.
+# runs this. See .claude/lessons/LESSONS.md N-004.
 run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
 
 [tasks."build:xcframework"]

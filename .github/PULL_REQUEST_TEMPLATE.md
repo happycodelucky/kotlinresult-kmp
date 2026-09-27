@@ -102,7 +102,7 @@ Closes #
 
 - [ ] `mise run check` passes (ktlint + detekt + ABI check + every test target, both modules)
 - [ ] Native + Android compile clean (`:kotlinresult:compileKotlinMacosArm64` / `compileKotlinIosSimulatorArm64` / `compileAndroidMain`) — the JVM compile alone is not a sufficient gate
-- [ ] `mise run build:samples` passes if dependencies or the public API changed — `check` never builds the sample apps (LESSONS N-006)
+- [ ] `mise run build:samples` passes if dependencies or the public API changed — `check` never builds the sample apps (LESSONS N-004)
 - [ ] New/changed logic has `commonTest` coverage (`runTest` virtual time, no `Thread.sleep`)
 - [ ] Public API changes follow the Swift-interop rules (§7): sealed → exhaustive enum, `@Throws` replicated on every `actual` incl. `CancellationException`, no `kotlin.Result<T>` at the boundary
 - [ ] If the public API changed intentionally, `mise run api:dump` was run and the `api/` diff is committed and reviewed (§8)

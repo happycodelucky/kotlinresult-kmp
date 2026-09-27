@@ -75,7 +75,7 @@ version-catalog-update = "1.1.1"
 # on it, which is why analysis used to be gated off. Upstream issue #1724.
 # (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
 # criteria, it had no release since 2025-08, and it used Gradle APIs that fail
-# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-009.)
+# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-001.)
 dependency-analysis = "3.19.2"
 
 # --- Android SDK ------------------------------------------------------------
@@ -83,6 +83,12 @@ dependency-analysis = "3.19.2"
 # Lifecycle 2.11 AARs declare minCompileSdk=37 in their aar-metadata, which
 # AGP's checkAarMetadata enforces on the sample app.
 android-compile-sdk = "37"
+# The compileSdk CONSUMERS must use — written into the AAR's aar-metadata as
+# minCompileSdk (convention plugin). Decoupled from android-compile-sdk above, so
+# the sample's need for 37 isn't forced on every consumer (LESSONS B-001).
+# 30 = minSdk: the library uses no Android API, so nothing needs newer. Raise it
+# only if the public API exposes newer Android types.
+android-min-compile-sdk = "30"
 # arm64-v8a only (CLAUDE.md §4).
 android-min-sdk = "30"
 # Bytecode level for the android + jvm targets (read by the convention plugin).
