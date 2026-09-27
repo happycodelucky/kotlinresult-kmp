@@ -1,10 +1,11 @@
 ---
 title: "Result: a Swift-friendly kotlin.Result for KMP"
 change: minor
+version: 1.0.0
 description: "First release: Result<T> mirrors the kotlin.Result API in Kotlin and appears as KotlinResult in Swift, with bundled get() / result(as:) helpers; plus assertSuccess() / assertFailure<E>() in kotlinresult-testing."
 ---
 
-The first release of KotlinResult: `kotlin.Result` for Kotlin Multiplatform,
+The first release of KotlinResult, shipped as a stable 1.0.0: `kotlin.Result` for Kotlin Multiplatform,
 usable from Swift.
 
 - **`com.happycodelucky.kotlinresult.Result<T>`** wraps and delegates to
