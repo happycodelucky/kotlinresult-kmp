@@ -1,6 +1,6 @@
 # Changesets
 
-Every PR that changes what consumers of __DISPLAY_NAME__ get adds one Markdown
+Every PR that changes what consumers of KotlinResult get adds one Markdown
 file here, describing its change. The files pile up on `main` until the next
 release gathers them into the changelog and picks the version from them.
 
@@ -100,7 +100,7 @@ implementation("com.example:lib:1.4.2")
 or a single line, with the marker in a trailing comment:
 
 ```kotlin
-const val LIBRARY_VERSION = "1.4.2" // x-release-version
+const val KOTLINRESULT_VERSION = "1.4.2" // x-release-version
 ```
 
 The marker must sit in a comment (`<!-- -->`, `//`, `#`, `/* */`, `--`); a

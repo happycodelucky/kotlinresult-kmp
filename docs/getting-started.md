@@ -4,12 +4,12 @@ title: Getting started
 
 # Getting started
 
-TODO: walk a new reader through their first call into __DISPLAY_NAME__. The
+TODO: walk a new reader through their first call into KotlinResult. The
 snippet below uses the placeholder API shipped by the template — swap it out for
 your real entry point.
 
 ```kotlin
-import com.happycodelucky.src.Greeter
+import com.happycodelucky.kotlinresult.Greeter
 
 fun main() {
     println(Greeter().greet())

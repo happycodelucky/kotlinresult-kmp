@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  __PROJECT_NAME__ — macOS sample entitlements.
+  kotlinresult — macOS sample entitlements.
 
   App Sandbox on with the outbound-network client capability — the common
   baseline for a library that makes network calls. Add what your library needs:

@@ -79,8 +79,8 @@ jobs:
         with:
           name: fast-reports
           path: |
-            src/build/reports/
-            src-testing/build/reports/
+            kotlinresult/build/reports/
+            kotlinresult-testing/build/reports/
             build/reports/dependency-analysis/
           if-no-files-found: ignore
 
@@ -133,14 +133,14 @@ jobs:
       - name: Upload XCFramework
         uses: actions/upload-artifact@v7
         with:
-          name: __DISPLAY_NAME__-${{ steps.version.outputs.VERSION }}.xcframework
-          path: src/build/XCFrameworks/release/__FRAMEWORK__.xcframework
+          name: KotlinResult-${{ steps.version.outputs.VERSION }}.xcframework
+          path: kotlinresult/build/XCFrameworks/release/KotlinresultKit.xcframework
           # `warn` (not `error`) so the UN-RENDERED template repo's own CI stays
-          # green: here __FRAMEWORK__ is a literal token, so the path never
+          # green: here KotlinresultKit is a literal token, so the path never
           # matches and the build produces SrcKit.xcframework instead. `mise run
           # init` flips this to `error` in the rendered project, where the path
           # resolves and a missing artifact is a real failure.
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload test reports on failure
         if: failure()
@@ -148,6 +148,6 @@ jobs:
         with:
           name: test-reports-${{ steps.version.outputs.VERSION }}
           path: |
-            src/build/reports/tests/
-            src/build/reports/ktlint/
+            kotlinresult/build/reports/tests/
+            kotlinresult/build/reports/ktlint/
           if-no-files-found: ignore

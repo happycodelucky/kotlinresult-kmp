@@ -1,4 +1,4 @@
-# __PROJECT_NAME__ — iOSApp sample (Xcode project spec for `xcodegen`).
+# kotlinresult — iOSApp sample (Xcode project spec for `xcodegen`).
 #
 # Run `mise run xcodeproj:ios` (or `xcodegen generate` from this dir) to emit
 # iOSApp.xcodeproj from this spec. The .xcodeproj is gitignored, so the spec is
@@ -6,24 +6,24 @@
 #
 # The app declares a local Swift Package dependency at `../../` (the repo root
 # Package.swift). `mise run spm:dev` rewrites that Package.swift to point at the
-# locally-built debug __FRAMEWORK__.xcframework, so iOS engineers iterate by
+# locally-built debug KotlinresultKit.xcframework, so iOS engineers iterate by
 # re-running spm:dev and rebuilding in Xcode — no Gradle inside Xcode.
 #
-# The package name __FRAMEWORK__ matches the XCFramework's Swift module name
-# (the shared Swift code does `import __FRAMEWORK__`). Add platform capabilities
+# The package name KotlinresultKit matches the XCFramework's Swift module name
+# (the shared Swift code does `import KotlinresultKit`). Add platform capabilities
 # your library needs to the Info/entitlements blocks below (e.g. local-network
 # usage strings, App Transport Security exceptions).
 
 name: iOSApp
 
 options:
-  bundleIdPrefix: com.happycodelucky.__PROJECT_NAME__.example
+  bundleIdPrefix: com.happycodelucky.kotlinresult.example
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
 
 packages:
-  __FRAMEWORK__:
+  KotlinresultKit:
     path: ../../
 
 targets:
@@ -36,7 +36,7 @@ targets:
     info:
       path: iOSApp/Info.plist
       properties:
-        CFBundleDisplayName: __DISPLAY_NAME__
+        CFBundleDisplayName: KotlinResult
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         UILaunchScreen: {}
@@ -47,8 +47,8 @@ targets:
       properties: {}
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.happycodelucky.__PROJECT_NAME__.example.ios
-        PRODUCT_NAME: "__DISPLAY_NAME__"
+        PRODUCT_BUNDLE_IDENTIFIER: com.happycodelucky.kotlinresult.example.ios
+        PRODUCT_NAME: "KotlinResult"
         SWIFT_VERSION: "5.10"
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: "YES"
@@ -60,4 +60,4 @@ targets:
         # finds no matching framework slice, and fails to link.
         EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
     dependencies:
-      - package: __FRAMEWORK__
+      - package: KotlinresultKit

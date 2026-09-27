@@ -1,12 +1,12 @@
 /*
- * __PROJECT_NAME__ — JVM CLI sample.
+ * kotlinresult — JVM CLI sample.
  *
  * A plain JVM application that exercises the real library against the desktop
  * JVM target. Useful as a usage example and as a manual end-to-end harness for
  * behavior that virtual-time unit tests can't cover (real I/O, real timing).
  *
  * Not a published artifact — excluded from the library lint/check gate. Depends
- * on :src via the JVM slice.
+ * on :kotlinresult via the JVM slice.
  */
 plugins {
     // Version omitted: the Kotlin plugin is already on the build classpath from
@@ -17,7 +17,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":src"))
+    implementation(project(":kotlinresult"))
     implementation(libs.kotlinx.coroutines.core)
 }
 
@@ -26,5 +26,5 @@ kotlin {
 }
 
 application {
-    mainClass.set("com.happycodelucky.src.cli.MainKt")
+    mainClass.set("com.happycodelucky.kotlinresult.cli.MainKt")
 }

@@ -1,4 +1,4 @@
-# Contributing to __DISPLAY_NAME__
+# Contributing to KotlinResult
 
 Thanks for contributing. This repo uses [mise](https://mise.jdx.dev) as the task
 contract — every action is a `mise run <task>`.

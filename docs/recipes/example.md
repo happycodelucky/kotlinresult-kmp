@@ -9,7 +9,7 @@ TODO: replace this with a real, task-focused recipe. A recipe answers one
 to explain the moving parts.
 
 ```kotlin
-import com.happycodelucky.src.Greeter
+import com.happycodelucky.kotlinresult.Greeter
 
 // A minimal end-to-end example. Swap `Greeter` for your real API.
 val message = Greeter().greet()

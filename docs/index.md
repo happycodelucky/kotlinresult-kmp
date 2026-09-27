@@ -2,9 +2,9 @@
 title: Overview
 ---
 
-# __DISPLAY_NAME__
+# KotlinResult
 
-TODO: describe your library. __DISPLAY_NAME__ is a Kotlin Multiplatform library
+TODO: describe your library. KotlinResult is a Kotlin Multiplatform library
 targeting iOS, macOS, Android, and JVM. Replace this paragraph with a short,
 concrete description of what the library does and who it's for.
 
@@ -12,7 +12,7 @@ concrete description of what the library does and who it's for.
 
 ```kotlin
 dependencies {
-    implementation("com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__:{{ version }}")
+    implementation("com.happycodelucky.kotlinresult:kotlinresult:{{ version }}")
 }
 ```
 

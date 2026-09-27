@@ -1,8 +1,8 @@
 /*
- * __PROJECT_NAME__ — gradle/plugins included build.
+ * kotlinresult — gradle/plugins included build.
  *
- * Hosts the precompiled convention plugins (`__PROJECT_NAME__.kmp-library`,
- * `__PROJECT_NAME__.publish`) that deduplicate the module build scripts. Wired
+ * Hosts the precompiled convention plugins (`kotlinresult.kmp-library`,
+ * `kotlinresult.publish`) that deduplicate the module build scripts. Wired
  * into the main build via `pluginManagement { includeBuild("gradle/plugins") }`
  * in the root settings.gradle.kts.
  */

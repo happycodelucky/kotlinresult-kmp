@@ -4,7 +4,7 @@ title: Architecture
 
 # Architecture
 
-TODO: describe how __DISPLAY_NAME__ is put together. The template ships with an
+TODO: describe how KotlinResult is put together. The template ships with an
 architecture worth keeping in mind as you flesh this out:
 
 ## Headless library
@@ -26,7 +26,7 @@ The same library ships through two channels:
 - **Maven Central** for Gradle / KMP consumers — Android AAR, multiplatform
   metadata, and per-target klibs.
 - **GitHub Releases** (via KMMBridge) for pure-Swift SPM consumers — a
-  SKIE-enhanced `__FRAMEWORK__.xcframework` zip referenced from `Package.swift`.
+  SKIE-enhanced `KotlinresultKit.xcframework` zip referenced from `Package.swift`.
 
-See [Publishing](https://github.com/happycodelucky/__PROJECT_NAME__/blob/main/.github/PUBLISHING.md)
+See [Publishing](https://github.com/happycodelucky/kotlinresult/blob/main/.github/PUBLISHING.md)
 for how the two channels are produced.

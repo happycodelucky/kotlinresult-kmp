@@ -1,8 +1,8 @@
 /*
- * __PROJECT_NAME__ — root build script.
+ * kotlinresult — root build script.
  *
- * Plugins are declared here with `apply false`; they're applied in :src and
- * :src-testing (mostly via the `__PROJECT_NAME__.kmp-library` convention
+ * Plugins are declared here with `apply false`; they're applied in :kotlinresult and
+ * :kotlinresult-testing (mostly via the `kotlinresult.kmp-library` convention
  * plugin). This keeps `gradle/libs.versions.toml` as the single source of truth
  * for versions (CLAUDE.md §3).
  */
@@ -36,7 +36,7 @@ plugins {
 }
 
 allprojects {
-    group = "com.happycodelucky.__PROJECT_NAME__"
+    group = "com.happycodelucky.kotlinresult"
     // `version` lives in gradle.properties: the last version released from
     // main, bumped only by the release PR (scripts/changeset.py). CI stamps
     // non-release builds with `-Pversion=…-ci.N`; a pre-release passes its own
@@ -56,7 +56,7 @@ allprojects {
 //   * usedTransitiveDependencies → ignore. Structurally wrong on hierarchical
 //     KMP. It wants curated single deps re-declared in every leaf set —
 //     kermit's internal `kermit-core` in androidMain/jvmMain, `kotlin-test-junit`
-//     in every JVM-ish test set, `project(":src")` in jvmTest. Splitting curated
+//     in every JVM-ish test set, `project(":kotlinresult")` in jvmTest. Splitting curated
 //     deps into their transitive internals would churn the catalog (CLAUDE.md §5).
 //   * incorrectConfiguration → warn. RE-ENABLED. The api-vs-implementation
 //     over-suggestion on kotlinx.coroutines.core (DAGP issue #1700) was fixed in
@@ -72,11 +72,11 @@ allprojects {
 //       - `co.touchlab:kermit` — the convention plugin injects it into every
 //         module on purpose, so `Logger` is available in commonMain whether or
 //         not that module logs today (CLAUDE.md §5).
-//       - `:src` — `:src-testing` declares it as `api` to re-export the public
+//       - `:kotlinresult` — `:kotlinresult-testing` declares it as `api` to re-export the public
 //         types transitively to consumers writing `testImplementation(…-testing)`
-//         (see src-testing/build.gradle.kts). A deliberate re-export reads as
+//         (see kotlinresult-testing/build.gradle.kts). A deliberate re-export reads as
 //         "unused" to a compile-usage analysis, permanently.
-//       - `:src-testing` — the fakes are consumed from `:src`'s test source sets;
+//       - `:kotlinresult-testing` — the fakes are consumed from `:kotlinresult`'s test source sets;
 //         DAGP under-detects cross-source-set test usage on KMP (issue #1345).
 //
 // NOTE (template): turbine, kotest-assertions-core, kotest-property and atomicfu
@@ -105,8 +105,8 @@ dependencyAnalysis {
                 severity("warn")
                 exclude(
                     "co.touchlab:kermit",
-                    ":src",
-                    ":src-testing",
+                    ":kotlinresult",
+                    ":kotlinresult-testing",
                 )
             }
         }
@@ -126,7 +126,7 @@ subprojects {
         // plugin fans out) — without a per-module apply, `buildHealth` runs but
         // analyzes ZERO projects ("No project health reports found"). Applying it
         // to the published KMP modules only (alongside ktlint/detekt) makes
-        // buildHealth actually inspect `:src` / `:src-testing`; the advice is then
+        // buildHealth actually inspect `:kotlinresult` / `:kotlinresult-testing`; the advice is then
         // tuned in the root `dependencyAnalysis { }` block below.
         //
         // This used to be gated behind `-PenableDependencyAnalysis=true`: DAGP
@@ -173,15 +173,15 @@ subprojects {
 
 // Apply Dokka to the published modules and aggregate into docs/api/.
 dokka {
-    moduleName.set("__DISPLAY_NAME__")
+    moduleName.set("KotlinResult")
 }
 
 dependencies {
     // Aggregate Dokka HTML from the published modules into the root build
-    // (Dokka v2 pattern). `:src-testing` is a public-API module too — consumers
+    // (Dokka v2 pattern). `:kotlinresult-testing` is a public-API module too — consumers
     // writing tests want its fakes documented next to the main library.
-    dokka(project(":src"))
-    dokka(project(":src-testing"))
+    dokka(project(":kotlinresult"))
+    dokka(project(":kotlinresult-testing"))
 }
 
 /**
@@ -246,7 +246,7 @@ versionCatalogUpdate {
         // and jvm-target (read via the string-based findVersion("…") API in the
         // convention plugin, invisible to VCU's usage scan), and the Apple
         // deployment targets (documentation for the floors spelled out in
-        // src/build.gradle.kts and Package.swift). Without this, VCU prunes them.
+        // kotlinresult/build.gradle.kts and Package.swift). Without this, VCU prunes them.
         keepUnusedVersions.set(true)
     }
     pin {

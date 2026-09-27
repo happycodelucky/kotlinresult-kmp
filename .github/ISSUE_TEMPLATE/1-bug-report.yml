@@ -1,7 +1,7 @@
 # Agents filing through `gh issue create`: the web form is bypassed, so build
 # the body from this file — see CLAUDE.md §11.
 name: Bug report
-description: Report incorrect behavior in __DISPLAY_NAME__.
+description: Report incorrect behavior in KotlinResult.
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -39,7 +39,7 @@ body:
   - type: input
     id: library-version
     attributes:
-      label: __DISPLAY_NAME__ version
+      label: KotlinResult version
       description: The release tag or commit SHA you're on.
       placeholder: "e.g. 0.3.1 or a1b2c3d"
     validations:
@@ -60,7 +60,7 @@ body:
       label: Reproduction
       description: |
         The smallest steps or code that trigger the bug. A failing test against
-        `:src` or `:src-testing` is ideal — it's the contract a fix verifies
+        `:kotlinresult` or `:kotlinresult-testing` is ideal — it's the contract a fix verifies
         against. Link a branch/gist if it's more than a snippet.
       render: kotlin
       placeholder: |
@@ -93,11 +93,11 @@ body:
       label: Context & pointers
       description: |
         Where a fix should start — for a maintainer or a coding agent. The
-        suspected module / source set (e.g. `:src` `appleMain`), files or
+        suspected module / source set (e.g. `:kotlinresult` `appleMain`), files or
         symbols involved, when it started, a suspected cause, related issues
         or PRs.
       placeholder: |
-        - Suspected area: `:src` appleMain, `SomeClient.connect()`
+        - Suspected area: `:kotlinresult` appleMain, `SomeClient.connect()`
         - Started after: 0.3.0
         - Related: #12
     validations:

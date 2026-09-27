@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 pluginManagement {
-    // Convention plugins (`__PROJECT_NAME__.kmp-library`, `__PROJECT_NAME__.publish`)
+    // Convention plugins (`kotlinresult.kmp-library`, `kotlinresult.publish`)
     // live in gradle/plugins; versions still come from gradle/libs.versions.toml,
     // which gradle/plugins shares.
     includeBuild("gradle/plugins")
@@ -37,22 +37,22 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "__PROJECT_NAME__"
+rootProject.name = "kotlinresult"
 
 // --- Published library modules ------------------------------------------------
-include(":src")
+include(":kotlinresult")
 
-// :src-testing — public, scriptable test fakes + helpers for consumers of :src.
-// Headless KMP module; same targets as :src; published as a sibling Maven
+// :kotlinresult-testing — public, scriptable test fakes + helpers for consumers of :kotlinresult.
+// Headless KMP module; same targets as :kotlinresult; published as a sibling Maven
 // Central artifact. Consumers wire it on `testImplementation` (or KMP
 // `commonTest` deps).
-include(":src-testing")
+include(":kotlinresult-testing")
 
 // --- Sample apps (CLAUDE.md §9) -----------------------------------------------
 // The Android sample is a normal Gradle subproject because Compose + AGP play
 // best inside the same Gradle build that produces the AAR. The iOS and macOS
 // samples are standalone Xcode projects under /apps/ios and /apps/macos; they
-// consume the :src module via SPM, NOT Gradle, and so are deliberately not
+// consume the :kotlinresult module via SPM, NOT Gradle, and so are deliberately not
 // included here. A JVM CLI sample lives under /apps/jvm-cli.
 include(":androidApp")
 project(":androidApp").projectDir = file("apps/android")

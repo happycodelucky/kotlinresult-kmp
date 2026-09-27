@@ -1,11 +1,11 @@
 @file:Suppress("UnstableApiUsage")
 
 /*
- * __PROJECT_NAME__ — apps/android sample.
+ * kotlinresult — apps/android sample.
  *
- * A Jetpack Compose app that exercises the `:src` library on Android. Useful as
+ * A Jetpack Compose app that exercises the `:kotlinresult` library on Android. Useful as
  * a manual end-to-end test against a real device. Standalone Android application
- * module — a separate Gradle subproject from the headless `:src` library, which
+ * module — a separate Gradle subproject from the headless `:kotlinresult` library, which
  * it consumes as a project dependency for local development; downstream apps
  * would consume the published AAR via Maven coordinates.
  */
@@ -21,14 +21,14 @@ plugins {
 }
 
 android {
-    namespace = "com.happycodelucky.src.example.android"
+    namespace = "com.happycodelucky.kotlinresult.example.android"
     compileSdk =
         libs.versions.android.compile.sdk
             .get()
             .toInt()
 
     defaultConfig {
-        applicationId = "com.happycodelucky.src.example.android"
+        applicationId = "com.happycodelucky.kotlinresult.example.android"
         minSdk =
             libs.versions.android.min.sdk
                 .get()
@@ -59,7 +59,7 @@ kotlin {
 
 dependencies {
     // The library under test.
-    implementation(project(":src"))
+    implementation(project(":kotlinresult"))
 
     // Compose runtime + UI + Material3.
     implementation(platform(libs.androidx.compose.bom))

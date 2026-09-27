@@ -1,4 +1,4 @@
-# CLAUDE.md — __DISPLAY_NAME__ Project Guide
+# CLAUDE.md — KotlinResult Project Guide
 
 Kotlin Multiplatform library for iOS, macOS, Android, and JVM. This file is the
 contract a contributor (human or agent) reads first. Start here, then
@@ -9,14 +9,14 @@ contract a contributor (human or agent) reads first. Start here, then
 
 ## 1. Scope
 
-> **TODO (fill this in):** describe what __DISPLAY_NAME__ does — the problem it
+> **TODO (fill this in):** describe what KotlinResult does — the problem it
 > solves, what's *in* the shared library and what's deliberately *not*.
 
-- **Shared (in `:src`):** the library's business logic. Headless — no UI
+- **Shared (in `:kotlinresult`):** the library's business logic. Headless — no UI
   dependencies. Each platform app consumes the library's `StateFlow`/`SharedFlow`
   or suspend API.
 - **Not shared:** UI. Platform apps under `apps/` have their own native UI.
-- **Modules:** `:src` (the library) and `:src-testing` (public test fakes +
+- **Modules:** `:kotlinresult` (the library) and `:kotlinresult-testing` (public test fakes +
   helpers for consumers, e.g. a `FakeX` and a `withX { … }` helper).
 
 ## 2. Decisions (load-bearing)
@@ -50,12 +50,12 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
   `jvmMain`. Code in `appleMain` must compile on **both** iOS and macOS (use
   Foundation); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll
   source-set wiring — any manual `dependsOn()` edge disables the template.
-- Module shape lives in the `template.kmp-library` convention plugin
+- Module shape lives in the `kotlinresult.kmp-library` convention plugin
   (`gradle/plugins/`). Framework base name and namespace are DERIVED from the
-  module name (`src` → framework `SrcKit`, namespace `com.happycodelucky.src`).
+  module name (`src` → framework `SrcKit`, namespace `com.happycodelucky.kotlinresult`).
   The framework / Swift module is always `<Name>Kit`, so it never shares a name
   with a public type (SKIE would rename the type in Swift — LESSONS D-002).
-  Adding a module = apply `template.kmp-library` + `template.publish`.
+  Adding a module = apply `kotlinresult.kmp-library` + `kotlinresult.publish`.
 - Keep the `expect`/`actual` seam tiny; push logic into `commonMain`.
 
 ## 5. Libraries — Kotlin-first
@@ -67,7 +67,7 @@ every module by the convention plugin — `Logger` is available in `commonMain`)
 UUIDs (stable since 2.4.0 — no platform UUID types in common). For HTTP, prefer
 Ktor/Ktorfit. Testing: `kotlin.test` + Turbine + `kotlinx-coroutines-test` +
 Kotest (property tests). Library code uses **constructor injection only** — no
-Koin/service locator inside `:src`.
+Koin/service locator inside `:kotlinresult`.
 
 **Finding a library.** Before writing platform glue or pulling a JVM-only / `expect`-`actual`-heavy
 dependency, look for an existing multiplatform one — in this order:
@@ -111,7 +111,7 @@ first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
 ## 7. Swift interop
 
 SKIE mandatory (convention plugin configures it; `produceDistributableFramework()`
-in `:src`). `Flow`/`StateFlow` → `AsyncSequence`. Sealed types → exhaustive Swift
+in `:kotlinresult`). `Flow`/`StateFlow` → `AsyncSequence`. Sealed types → exhaustive Swift
 enums. **`@Throws` on an `expect` must be replicated verbatim on every `actual`**,
 and a `@Throws` on a `suspend fun` must list `CancellationException`. Never
 `kotlin.Result<T>` at the boundary. Apple casing everywhere in prose, file names,
@@ -120,12 +120,12 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 ## 8. Distribution
 
 Two channels, non-overlapping:
-- **Maven Central** (`template.publish` / vanniktech): Android AAR + jvm jar +
+- **Maven Central** (`kotlinresult.publish` / vanniktech): Android AAR + jvm jar +
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
-- **GitHub Releases** (KMMBridge in `src/build.gradle.kts`): the SKIE-enhanced
-  `__FRAMEWORK__.xcframework` for SPM consumers. Don't redeclare `XCFramework("__FRAMEWORK__")` —
+- **GitHub Releases** (KMMBridge in `kotlinresult/build.gradle.kts`): the SKIE-enhanced
+  `KotlinresultKit.xcframework` for SPM consumers. Don't redeclare `XCFramework("KotlinresultKit")` —
   KMMBridge auto-creates it. The released `Package.swift` lives only on each
   `vX.Y.Z` tag; `main` keeps the local-dev form.
 
@@ -172,7 +172,7 @@ All shared logic gets `commonTest` coverage with `runTest` virtual time (never
 multiplatform arbs only — `Arb.stringPattern` is JVM-only and breaks the native
 test compile). Inject a test `Clock`/`TimeSource` reading the test scheduler so
 `now` and `delay` stay in lockstep. The done gate is the full
-`:src:check :src-testing:check` (`mise run check`) — which compiles *test*
+`:kotlinresult:check :kotlinresult-testing:check` (`mise run check`) — which compiles *test*
 sources for every target and runs detekt. A JVM-only run hides native-test-compile
 and detekt failures.
 
@@ -199,7 +199,7 @@ and detekt failures.
    while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a
    different level is the author's call (say why in the body). Docs/CI/test-only
    PRs get the `no-changeset` label.
-8. Done when `mise run check` passes AND `:src:compileKotlinMacosArm64` /
+8. Done when `mise run check` passes AND `:kotlinresult:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` never builds the sample apps — `mise run build:samples` does (CI's

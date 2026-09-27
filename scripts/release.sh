@@ -78,7 +78,7 @@ case "$VERSION" in
         ;;
 esac
 TAG="v$VERSION"
-FRAMEWORK="__FRAMEWORK__"   # init.sh rewrites this to the framework module name.
+FRAMEWORK="KotlinresultKit"   # init.sh rewrites this to the framework module name.
 
 # Fail fast if the Maven Central credentials vanniktech needs aren't available.
 # A Gradle property `foo` resolves from an ORG_GRADLE_PROJECT_foo env var or from
@@ -152,8 +152,8 @@ fi
 
 # 1. Build the release XCFramework + zip it (the SPM asset).
 echo "==> Building release XCFramework"
-./gradlew ":src:assemble${FRAMEWORK}XCFramework" -Pversion="$VERSION"
-XCF_DIR="src/build/XCFrameworks/release"
+./gradlew ":kotlinresult:assemble${FRAMEWORK}XCFramework" -Pversion="$VERSION"
+XCF_DIR="kotlinresult/build/XCFrameworks/release"
 ZIP="$XCF_DIR/$FRAMEWORK.xcframework.zip"
 ( cd "$XCF_DIR" && rm -f "$FRAMEWORK.xcframework.zip" && zip -qry "$FRAMEWORK.xcframework.zip" "$FRAMEWORK.xcframework" )
 
@@ -225,7 +225,7 @@ rm -f "$NOTES"
 
 echo ""
 echo "Released $VERSION."
-echo "  Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.__PROJECT_NAME__/__PROJECT_NAME__/$VERSION"
+echo "  Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.kotlinresult/kotlinresult/$VERSION"
 echo "  GitHub:        https://github.com/$REPO/releases/tag/$TAG"
 if [ "$PRERELEASE" = "false" ]; then
     echo "  Docs site:     not deployed by hand — run: gh workflow run docs.yml -f deploy=true"

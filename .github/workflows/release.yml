@@ -4,7 +4,7 @@ name: Release
 #
 #   1. Maven Central (vanniktech plugin) — Android AAR, kotlinMultiplatform
 #      metadata, per-target klibs. For Gradle / KMP consumers.
-#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced __FRAMEWORK__.xcframework
+#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced KotlinresultKit.xcframework
 #      zip, attached to the vX.Y.Z release and referenced from the tagged
 #      Package.swift by URL + checksum. For pure-Swift SPM consumers; no
 #      Gradle build, no authentication. GitHub *Releases*, not GitHub
@@ -213,8 +213,8 @@ jobs:
       #   on Maven Central, no GH   → resume: skip Maven, finish the SPM half.
       #   on neither                → publish.
       #
-      # Checks every module that ships under com.happycodelucky.__PROJECT_NAME__
-      # (the library plus the `__PROJECT_NAME__-testing` fakes — they version and
+      # Checks every module that ships under com.happycodelucky.kotlinresult
+      # (the library plus the `kotlinresult-testing` fakes — they version and
       # ship together). Append artifact ids when new publishable modules land.
       # The grep is exact-match on `<version>X.Y.Z</version>` so 0.3.1 never
       # matches 0.3.10. Maven metadata can lag a release by ~30 min, so a
@@ -231,10 +231,10 @@ jobs:
           fi
 
           ESCAPED="${RELEASE_VERSION//./\\.}"
-          ARTIFACTS=(__PROJECT_NAME__ __PROJECT_NAME__-testing)
+          ARTIFACTS=(kotlinresult kotlinresult-testing)
           FOUND=0
           for ARTIFACT in "${ARTIFACTS[@]}"; do
-            METADATA_URL="https://repo1.maven.org/maven2/com/happycodelucky/__PROJECT_NAME__/${ARTIFACT}/maven-metadata.xml"
+            METADATA_URL="https://repo1.maven.org/maven2/com/happycodelucky/kotlinresult/${ARTIFACT}/maven-metadata.xml"
             if curl -sf "$METADATA_URL" 2>/dev/null | grep -qE "<version>${ESCAPED}</version>"; then
               echo "Already on Maven Central: ${ARTIFACT}:${RELEASE_VERSION}"
               FOUND=$((FOUND + 1))
@@ -286,9 +286,9 @@ jobs:
       #     closes the deployment, and releases it to public Maven Central.
       #     Cannot be undone.
       #
-      # The Gradle invocation is *not* scoped to a module (no `:src:` prefix),
+      # The Gradle invocation is *not* scoped to a module (no `:kotlinresult:` prefix),
       # so it runs across every module that applies the publish convention
-      # plugin — currently `:src` and `:src-testing`. Each publishes every
+      # plugin — currently `:kotlinresult` and `:kotlinresult-testing`. Each publishes every
       # publication the KMP plugin registered (Android AAR, jvm jar,
       # kotlinMultiplatform metadata, per-target klibs) plus sources / javadoc
       # jars and detached GPG signatures.
@@ -326,12 +326,12 @@ jobs:
       # no asset for Package.swift to reference. `kmmBridgePublish` does the
       # heavy lifting in one Gradle invocation:
       #
-      #   1. Builds the SKIE-enhanced release __FRAMEWORK__.xcframework (all
+      #   1. Builds the SKIE-enhanced release KotlinresultKit.xcframework (all
       #      three slices: iosArm64, iosSimulatorArm64, macosArm64).
       #   2. Zips it and creates the GitHub Release tagged `vX.Y.Z` (the tag
       #      lands on the default-branch HEAD — moved onto the release commit
       #      two steps later).
-      #   3. Uploads `__FRAMEWORK__.xcframework.zip` as a release asset.
+      #   3. Uploads `KotlinresultKit.xcframework.zip` as a release asset.
       #   4. Regenerates the root Package.swift with the asset URL + sha256
       #      checksum.
       #
@@ -350,7 +350,7 @@ jobs:
           ORG_GRADLE_PROJECT_GITHUB_REPO: ${{ github.repository }}
           ORG_GRADLE_PROJECT_GITHUB_PUBLISH_TOKEN: ${{ github.token }}
         run: |
-          ./gradlew :src:kmmBridgePublish \
+          ./gradlew :kotlinresult:kmmBridgePublish \
             -Pversion="$RELEASE_VERSION" \
             -PENABLE_PUBLISHING=true \
             --no-daemon
@@ -369,7 +369,7 @@ jobs:
         if: env.DRY_RUN != 'true'
         run: |
           set -euo pipefail
-          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/__FRAMEWORK__.xcframework.zip"
+          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/KotlinresultKit.xcframework.zip"
 
           sed -i '' -E "s|^let remoteKotlinUrl = .*$|let remoteKotlinUrl = \"${ASSET_URL}\"|" Package.swift
 
@@ -429,9 +429,9 @@ jobs:
               echo "https://central.sonatype.com/publishing/deployments —"
               echo "Publish to release $RELEASE_VERSION, or Drop to discard."
             else
-              echo "Released com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__:$RELEASE_VERSION"
+              echo "Released com.happycodelucky.kotlinresult:kotlinresult:$RELEASE_VERSION"
               echo ""
-              echo "- Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.__PROJECT_NAME__/__PROJECT_NAME__/$RELEASE_VERSION"
+              echo "- Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.kotlinresult/kotlinresult/$RELEASE_VERSION"
               echo "- GitHub Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/$RELEASE_TAG"
               echo "- SPM: https://github.com/${GITHUB_REPOSITORY}.git pinned to $RELEASE_TAG"
               echo ""

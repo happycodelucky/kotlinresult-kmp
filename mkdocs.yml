@@ -1,4 +1,4 @@
-# __DISPLAY_NAME__ docs site.
+# KotlinResult docs site.
 #
 # Source of truth for docs structure. Auto-discovery is deliberately disabled —
 # explicit `nav:` keeps page ordering deterministic, the way Wire does it.
@@ -7,11 +7,11 @@
 #   .venv/bin/mkdocs serve   # local preview at http://localhost:8000
 #   .venv/bin/mkdocs build --strict   # fails on broken internal links / nav drift
 
-site_name: __DISPLAY_NAME__
+site_name: KotlinResult
 site_description: A Kotlin Multiplatform library for iOS, macOS, Android, and JVM.
-site_url: https://happycodelucky.github.io/__PROJECT_NAME__/
-repo_name: happycodelucky/__PROJECT_NAME__
-repo_url: https://github.com/happycodelucky/__PROJECT_NAME__
+site_url: https://happycodelucky.github.io/kotlinresult/
+repo_name: happycodelucky/kotlinresult
+repo_url: https://github.com/happycodelucky/kotlinresult
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Paul Bates
 
@@ -99,7 +99,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/happycodelucky/__PROJECT_NAME__
+      link: https://github.com/happycodelucky/kotlinresult
 
 # Explicit nav — never auto-discovered. Page ordering matters; this file is the truth.
 nav:

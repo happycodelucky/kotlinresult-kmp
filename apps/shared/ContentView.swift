@@ -1,16 +1,16 @@
 //
 //  ContentView.swift
-//  __PROJECT_NAME__ — shared SwiftUI, used by both the iOS and macOS samples.
+//  kotlinresult — shared SwiftUI, used by both the iOS and macOS samples.
 //
 //  Demonstrates consuming the Kotlin Multiplatform library from Swift via the
-//  SKIE-enhanced XCFramework. `import __FRAMEWORK__` brings in the generated
+//  SKIE-enhanced XCFramework. `import KotlinresultKit` brings in the generated
 //  Swift API; `Greeter` is the placeholder Kotlin class. SKIE bridges Kotlin
 //  suspend functions to async/await and Flow to AsyncSequence — grow this view
 //  into your real sample once the template is rendered.
 //
 
 import SwiftUI
-import __FRAMEWORK__
+import KotlinresultKit
 
 struct ContentView: View {
     @State private var greeting: String = ""
@@ -27,7 +27,7 @@ struct ContentView: View {
         .padding()
         .onAppear {
             // Call the Kotlin library. `Greeter` and `greet()` come from the
-            // generated __FRAMEWORK__ module.
+            // generated KotlinresultKit module.
             greeting = Greeter().greet()
         }
     }

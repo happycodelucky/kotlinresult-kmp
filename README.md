@@ -1,4 +1,4 @@
-# __DISPLAY_NAME__
+# KotlinResult
 
 ![iOS 18+](https://img.shields.io/badge/iOS-18%2B-blue.svg?style=for-the-badge&logo=apple)
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue.svg?style=for-the-badge&logo=apple)
@@ -7,10 +7,10 @@
 ![Kotlin 2.4](https://img.shields.io/badge/Kotlin-2.4-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)
 
-> **TODO:** one-paragraph description of what __DISPLAY_NAME__ does, behind one
+> **TODO:** one-paragraph description of what KotlinResult does, behind one
 > Kotlin Multiplatform API for iOS, macOS, Android, and the JVM.
 
-UI is out of scope — __DISPLAY_NAME__ is the headless `:src` KMP module
+UI is out of scope — KotlinResult is the headless `:kotlinresult` KMP module
 (see [`CLAUDE.md`](CLAUDE.md) §1). Each platform app consumes it natively; see
 [`apps/`](apps/) for samples on every platform.
 
@@ -18,13 +18,13 @@ UI is out of scope — __DISPLAY_NAME__ is the headless `:src` KMP module
 
 | Module | Coordinate | What it is |
 |--------|-----------|-----------|
-| `:src` | `com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__` | The library. |
-| `:src-testing` | `com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__-testing` | Public test fakes + helpers for consumers. |
+| `:kotlinresult` | `com.happycodelucky.kotlinresult:kotlinresult` | The library. |
+| `:kotlinresult-testing` | `com.happycodelucky.kotlinresult:kotlinresult-testing` | Public test fakes + helpers for consumers. |
 
 ## Quick example
 
 ```kotlin
-import com.happycodelucky.src.Greeter
+import com.happycodelucky.kotlinresult.Greeter
 
 println(Greeter().greet())   // "Hello from <platform>"
 ```
@@ -39,10 +39,10 @@ Replace the placeholder `Greeter` with your real API.
 ```kotlin
 // gradle/libs.versions.toml
 [libraries]
-__PROJECT_NAME__ = { module = "com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__", version = "0.0.0" }
+kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "0.0.0" }
 
 // build.gradle.kts (commonMain)
-implementation(libs.__PROJECT_NAME__)
+implementation(libs.kotlinresult)
 ```
 <!-- x-release-version-end -->
 
@@ -54,7 +54,7 @@ XCFramework ships as a GitHub Release asset (see
 
 <!-- x-release-version-start -->
 ```swift
-.package(url: "https://github.com/happycodelucky/__PROJECT_NAME__.git", from: "0.0.0")
+.package(url: "https://github.com/happycodelucky/kotlinresult.git", from: "0.0.0")
 ```
 <!-- x-release-version-end -->
 

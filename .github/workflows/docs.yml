@@ -63,14 +63,14 @@ jobs:
         run: mise run docs:install
 
       # The version install snippets render. mkdocs-macros reads it through
-      # /main.py: LIBRARY_VERSION when the Release workflow passes the version
+      # /main.py: KOTLINRESULT_VERSION when the Release workflow passes the version
       # it just published, otherwise `version=` in gradle.properties — the
       # last release on main (a release PR's preview shows the next one).
       - name: Use the released version
         if: inputs.version != ''
         env:
           VERSION: ${{ inputs.version }}
-        run: echo "LIBRARY_VERSION=$VERSION" >> "$GITHUB_ENV"
+        run: echo "KOTLINRESULT_VERSION=$VERSION" >> "$GITHUB_ENV"
 
       # Dokka writes aggregated HTML into build/dokka/html and copyDokkaToDocs
       # mirrors it into docs/api/ where mkdocs picks it up.

@@ -5,7 +5,7 @@ Exposes a single `version` variable that markdown can reference as
 `{{ version }}` for install snippets, version-pinning notes, etc.
 
 Resolution order:
-  1. LIBRARY_VERSION env var — the Release workflow passes the version it
+  1. KOTLINRESULT_VERSION env var — the Release workflow passes the version it
      just published when it deploys the site (docs.yml).
   2. `version=` in gradle.properties: the last version released from main,
      bumped by each release PR (scripts/changeset.py). No network, no `gh`.
@@ -40,7 +40,7 @@ def _committed_version() -> str | None:
 
 def _resolve_version() -> str:
     """Compute the version string the docs should render."""
-    env_version = os.environ.get("LIBRARY_VERSION", "").strip()
+    env_version = os.environ.get("KOTLINRESULT_VERSION", "").strip()
     if env_version:
         return env_version.lstrip("v")
 
