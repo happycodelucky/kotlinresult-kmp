@@ -1,22 +1,17 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-// KotlinresultKit is the XCFramework's Swift module name. At rest it is "SrcKit"
-// (derived from the :kotlinresult module + "Kit"); `mise run init` rewrites it to the
-// rendered framework name (<Name>Kit). This committed form points at the debug XCFramework Gradle builds, and
-// stays that way on main. Each release tags a commit whose Package.swift is the
-// remote `.binaryTarget(url:checksum:)` for that version's GitHub Release asset
-// — SPM consumers pin a tag and get that form (.github/PUBLISHING.md).
-//
-//   mise run spm:dev      — rebuild the debug XCFramework + point this file at it
-//   mise run spm:restore  — restore the committed form
+// BEGIN KMMBRIDGE VARIABLES BLOCK (do not edit)
+let remoteKotlinUrl = "https://github.com/happycodelucky/kotlinresult-kmp/releases/download/v1.0.1/KotlinresultKit.xcframework.zip"
+let remoteKotlinChecksum = "ac2405198ec8598d4072f2ec6d1fa94ce0a9ebe3222b11b5959bd3024a7244dd"
 let packageName = "KotlinresultKit"
+// END KMMBRIDGE BLOCK
 
 let package = Package(
     name: packageName,
     platforms: [
         .iOS(.v18),
-        .macOS(.v15),
+.macOS(.v15)
     ],
     products: [
         .library(
@@ -27,7 +22,9 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: packageName,
-            path: "./kotlinresult/build/XCFrameworks/debug/KotlinresultKit.xcframework"
-        ),
+            url: remoteKotlinUrl,
+            checksum: remoteKotlinChecksum
+        )
+        ,
     ]
 )
