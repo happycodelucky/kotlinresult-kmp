@@ -1,5 +1,5 @@
 /*
- * __PROJECT_NAME__ — gradle/plugins plugin host.
+ * kotlinresult — gradle/plugins plugin host.
  *
  * `kotlin-dsl` compiles the precompiled script plugins under src/main/kotlin.
  * The dependencies below put the third-party plugin classes on the convention

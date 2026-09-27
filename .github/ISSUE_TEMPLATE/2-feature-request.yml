@@ -1,7 +1,7 @@
 # Agents filing through `gh issue create`: the web form is bypassed, so build
 # the body from this file — see CLAUDE.md §11.
 name: Feature request
-description: Propose new functionality or an API change for __DISPLAY_NAME__.
+description: Propose new functionality or an API change for KotlinResult.
 title: "[Feature]: "
 labels: ["enhancement", "triage"]
 body:
@@ -25,7 +25,7 @@ body:
     id: proposal
     attributes:
       label: Proposed solution
-      description: What should __DISPLAY_NAME__ do? If it's an API change, sketch the public surface — remember it crosses to Swift via SKIE (sealed types, suspend/Flow), so design with that in mind (CLAUDE.md §7).
+      description: What should KotlinResult do? If it's an API change, sketch the public surface — remember it crosses to Swift via SKIE (sealed types, suspend/Flow), so design with that in mind (CLAUDE.md §7).
       render: kotlin
       placeholder: |
         // Sketch the public API you'd want in commonMain.
@@ -88,7 +88,7 @@ body:
         sets (`commonMain`, `appleMain`, …), existing types or files to extend,
         related issues or PRs, prior art in other libraries.
       placeholder: |
-        - Extends: `SomeClient` in `:src` commonMain
+        - Extends: `SomeClient` in `:kotlinresult` commonMain
         - Related: #12
     validations:
       required: false

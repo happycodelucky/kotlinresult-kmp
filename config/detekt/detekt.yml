@@ -1,4 +1,4 @@
-# __PROJECT_NAME__ — detekt overrides (layered on buildUponDefaultConfig = true).
+# kotlinresult — detekt overrides (layered on buildUponDefaultConfig = true).
 #
 # Only rules that systematically misfire on a typical KMP library are tuned
 # here; everything else stays at detekt's defaults. Each override has a one-line

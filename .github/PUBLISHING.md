@@ -1,22 +1,22 @@
 # Publishing
 
-__DISPLAY_NAME__ ships via two independent channels from `.github/workflows/release.yml`:
+KotlinResult ships via two independent channels from `.github/workflows/release.yml`:
 
 - **Maven Central** — Android AAR, `kotlinMultiplatform` metadata, per-target klibs. For Gradle/KMP consumers.
-- **GitHub Releases** (via KMMBridge) — the SKIE-enhanced `__FRAMEWORK__.xcframework` zip. For pure-Swift SPM consumers.
+- **GitHub Releases** (via KMMBridge) — the SKIE-enhanced `KotlinresultKit.xcframework` zip. For pure-Swift SPM consumers.
 
 ## Maven Central
 
-**Coordinates:** `com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__`
+**Coordinates:** `com.happycodelucky.kotlinresult:kotlinresult`
 
 One Gradle invocation publishes:
 
 - The Android AAR.
 - The `kotlinMultiplatform` metadata module (`.module` file) that ties every target together.
-- Per-target klibs: `__PROJECT_NAME__-iosarm64`, `__PROJECT_NAME__-iossimulatorarm64`, `__PROJECT_NAME__-macosarm64`, `__PROJECT_NAME__-android`.
+- Per-target klibs: `kotlinresult-iosarm64`, `kotlinresult-iossimulatorarm64`, `kotlinresult-macosarm64`, `kotlinresult-android`.
 - Sources / javadoc jars next to each, with detached GPG signatures.
 
-The test-fakes module publishes alongside it under `com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__-testing`.
+The test-fakes module publishes alongside it under `com.happycodelucky.kotlinresult:kotlinresult-testing`.
 
 ## Release pipeline
 
@@ -181,8 +181,8 @@ push is rejected) and doesn't need it: `main` keeps the local-dev
 
 ### Rules
 
-- KMMBridge config lives in the `kmmbridge { }` block in `src/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml`. Only `:src` gets KMMBridge — `:src-testing` ships klibs via Maven Central only.
-- Do **not** redeclare `XCFramework("__FRAMEWORK__")` in the `kotlin { }` block: KMMBridge auto-creates the aggregator tasks (`assemble__FRAMEWORK__{Debug,Release}XCFramework`) at config time; a second declaration collides.
+- KMMBridge config lives in the `kmmbridge { }` block in `kotlinresult/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml`. Only `:kotlinresult` gets KMMBridge — `:kotlinresult-testing` ships klibs via Maven Central only.
+- Do **not** redeclare `XCFramework("KotlinresultKit")` in the `kotlin { }` block: KMMBridge auto-creates the aggregator tasks (`assembleKotlinresultKit{Debug,Release}XCFramework`) at config time; a second declaration collides.
 - Versioning: the release workflow passes `-Pversion=X.Y.Z` — `gradle.properties`' version, or a pre-release's — and KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
 - Publishing is CI-only: the `kmmBridgePublish` task only exists when `-PENABLE_PUBLISHING=true` is passed (the release workflow does this).
 - Don't vendor `XCFramework` zips into the repo. Everything flows through GitHub Release assets + the committed `Package.swift`.

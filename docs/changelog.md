@@ -7,7 +7,7 @@ render_macros: false
 
 # Changelog
 
-Every release of __DISPLAY_NAME__, newest first. Each entry is assembled from
+Every release of KotlinResult, newest first. Each entry is assembled from
 the changesets merged since the previous release, when its release PR is
 opened.
 

@@ -1,0 +1,4 @@
+public final class com/happycodelucky/kotlinresult/testing/ResultAssertionsKt {
+	public static final fun assertSuccess (Lcom/happycodelucky/kotlinresult/Result;)Ljava/lang/Object;
+}
+

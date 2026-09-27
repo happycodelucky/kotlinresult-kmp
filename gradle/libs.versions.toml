@@ -1,5 +1,5 @@
 # =============================================================================
-# __PROJECT_NAME__ — single source of truth for dependency versions (CLAUDE.md §3).
+# kotlinresult — single source of truth for dependency versions (CLAUDE.md §3).
 #
 # IMPORTANT: before bumping any version, web-search the latest stable. Versions
 # in training data go stale fast. Stable only on `main` (no EAP / RC / Beta).
@@ -99,7 +99,7 @@ kotlinx-atomicfu = "0.33.0"
 
 # --- Logging ----------------------------------------------------------------
 # Kermit — multiplatform logging baseline, wired into every module via the
-# __PROJECT_NAME__.kmp-library convention plugin (CLAUDE.md §5).
+# kotlinresult.kmp-library convention plugin (CLAUDE.md §5).
 kermit = "2.2.0"
 
 # --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
@@ -167,7 +167,7 @@ kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest"
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 # Standard AGP application plugin for the Android sample app (separate from the
-# multiplatform-library variant used by :src).
+# multiplatform-library variant used by :kotlinresult).
 android-application = { id = "com.android.application", version.ref = "agp" }
 # Compose Compiler plugin shipped by Kotlin since 2.0; pin matches `kotlin`.
 # Applied in the Android sample. AGP 9.0+ ships Kotlin support built in, so no
@@ -177,7 +177,7 @@ skie = { id = "co.touchlab.skie", version.ref = "skie" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
-# kmmbridge-github — applied in src/build.gradle.kts. Publishes the
+# kmmbridge-github — applied in kotlinresult/build.gradle.kts. Publishes the
 # SKIE-enhanced XCFramework zip as a GitHub *Release* asset (public,
 # unauthenticated download) and regenerates the root Package.swift to reference
 # it by URL + checksum. The .github variant is a superset of the core plugin in

@@ -1,14 +1,14 @@
 # Sample apps
 
-Four samples that consume the `:src` library across every target. They're demo
+Four samples that consume the `:kotlinresult` library across every target. They're demo
 scaffolding — not published, not in the library check gate.
 
 | App | Path | Consumes the library via |
 |---|---|---|
 | iOS | `apps/ios` | SPM local binary target (root `Package.swift`) |
 | macOS | `apps/macos` | SPM local binary target (root `Package.swift`) |
-| Android | `apps/android` (`:androidApp`) | Gradle project dependency (`project(":src")`) |
-| JVM CLI | `apps/jvm-cli` (`:jvm-cli`) | Gradle project dependency (`project(":src")`) |
+| Android | `apps/android` (`:androidApp`) | Gradle project dependency (`project(":kotlinresult")`) |
+| JVM CLI | `apps/jvm-cli` (`:jvm-cli`) | Gradle project dependency (`project(":kotlinresult")`) |
 
 ## Apple apps (iOS / macOS)
 

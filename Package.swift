@@ -1,8 +1,8 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-// __FRAMEWORK__ is the XCFramework's Swift module name. At rest it is "SrcKit"
-// (derived from the :src module + "Kit"); `mise run init` rewrites it to the
+// KotlinresultKit is the XCFramework's Swift module name. At rest it is "SrcKit"
+// (derived from the :kotlinresult module + "Kit"); `mise run init` rewrites it to the
 // rendered framework name (<Name>Kit). This committed form points at the debug XCFramework Gradle builds, and
 // stays that way on main. Each release tags a commit whose Package.swift is the
 // remote `.binaryTarget(url:checksum:)` for that version's GitHub Release asset
@@ -10,7 +10,7 @@ import PackageDescription
 //
 //   mise run spm:dev      — rebuild the debug XCFramework + point this file at it
 //   mise run spm:restore  — restore the committed form
-let packageName = "__FRAMEWORK__"
+let packageName = "KotlinresultKit"
 
 let package = Package(
     name: packageName,
@@ -27,7 +27,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: packageName,
-            path: "./src/build/XCFrameworks/debug/__FRAMEWORK__.xcframework"
+            path: "./kotlinresult/build/XCFrameworks/debug/KotlinresultKit.xcframework"
         ),
     ]
 )

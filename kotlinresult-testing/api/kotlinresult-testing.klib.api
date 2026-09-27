@@ -1,0 +1,10 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.happycodelucky.kotlinresult:kotlinresult-testing>
+final fun <#A: kotlin/Any?> (com.happycodelucky.kotlinresult/Result<#A>).com.happycodelucky.kotlinresult.testing/assertSuccess(): #A // com.happycodelucky.kotlinresult.testing/assertSuccess|assertSuccess@com.happycodelucky.kotlinresult.Result<0:0>(){0§<kotlin.Any?>}[0]
+final inline fun <#A: reified kotlin/Throwable> (com.happycodelucky.kotlinresult/Result<*>).com.happycodelucky.kotlinresult.testing/assertFailure(): #A // com.happycodelucky.kotlinresult.testing/assertFailure|assertFailure@com.happycodelucky.kotlinresult.Result<*>(){0§<kotlin.Throwable>}[0]

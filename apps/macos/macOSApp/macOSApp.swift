@@ -1,6 +1,6 @@
 //
 //  macOSApp.swift
-//  __PROJECT_NAME__ macOS sample.
+//  kotlinresult macOS sample.
 //
 //  The content UI is shared with the iOS sample (apps/shared); this file is just
 //  the macOS @main entry point.
