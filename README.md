@@ -125,7 +125,7 @@ Your framework needs SKIE; don't declare your own `extension KotlinThrowable: Er
 ```kotlin
 // gradle/libs.versions.toml
 [libraries]
-kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "0.0.0" }
+kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "1.0.0" }
 
 // build.gradle.kts (commonMain)
 implementation(libs.kotlinresult)
@@ -140,7 +140,7 @@ XCFramework ships as a GitHub Release asset (see
 
 <!-- x-release-version-start -->
 ```swift
-.package(url: "https://github.com/happycodelucky/kotlinresult-kmp.git", from: "0.0.0")
+.package(url: "https://github.com/happycodelucky/kotlinresult-kmp.git", from: "1.0.0")
 ```
 <!-- x-release-version-end -->
 
