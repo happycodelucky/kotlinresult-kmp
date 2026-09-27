@@ -1,0 +1,129 @@
+name: Docs
+
+# Builds the mkdocs site on every PR and push to main — `mkdocs build --strict`
+# plus docs/check.py catch broken links and nav drift before they merge — but
+# DEPLOYS it only when asked: the Release workflow calls this after a
+# successful stable release (so the published site always documents what's on
+# Maven Central), and a manual run with `deploy` republishes the site from
+# main between releases (e.g. a docs-only fix).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy to GitHub Pages (normally the Release workflow does this after a release).
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      version:
+        description: The version the site documents. Empty = gradle.properties'.
+        required: false
+        type: string
+        default: ""
+      deploy:
+        required: false
+        type: boolean
+        default: false
+
+# Required by actions/deploy-pages on top of the default GITHUB_TOKEN scopes.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build site
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      # mise pins JDK, gradle, python, and the rest of the toolchain (see
+      # /mise.toml). setup-gradle stays for its build / dependency cache.
+      - name: Set up mise toolchain
+        uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+
+      # `cache-provider: basic` = the MIT-licensed caching provider, never the
+      # proprietary default. See .github/workflows/ci.yml for the full rationale.
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Install mkdocs toolchain
+        run: mise run docs:install
+
+      # The version install snippets render. mkdocs-macros reads it through
+      # /main.py: LIBRARY_VERSION when the Release workflow passes the version
+      # it just published, otherwise `version=` in gradle.properties — the
+      # last release on main (a release PR's preview shows the next one).
+      - name: Use the released version
+        if: inputs.version != ''
+        env:
+          VERSION: ${{ inputs.version }}
+        run: echo "LIBRARY_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # Dokka writes aggregated HTML into build/dokka/html and copyDokkaToDocs
+      # mirrors it into docs/api/ where mkdocs picks it up.
+      - name: Generate Dokka API reference
+        run: mise run docs:dokka
+
+      - name: Validate docs structure
+        run: mise run docs:check
+
+      # docs:build runs docs:dokka + docs:check via its dependency chain;
+      # we ran them as separate steps above for GH Actions log readability,
+      # so call docs:build:only here to skip the duplicate work.
+      - name: Build site
+        run: mise run docs:build:only
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Only when asked (see the header): `inputs.deploy` is unset on push and
+    # pull_request events. Never on the un-rendered template repo itself: it
+    # has no Pages site and the workflow token can't create one (org/repo
+    # Actions permissions aren't the template's to set). A rendered project has
+    # a different `github.repository`, so the deploy runs there (once that repo
+    # enables Pages — see README).
+    if: >-
+      inputs.deploy &&
+      github.repository != 'happycodelucky/kmp-template'
+    runs-on: ubuntu-latest
+    # One deploy at a time, and never cancel one mid-flight. Scoped to the
+    # deploy so PR builds don't queue behind it.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # `enablement: true` turns GitHub Pages ON for the repo automatically if
+      # it isn't already, using the GitHub Actions source — so a fresh repo (or
+      # this template repo) doesn't fail the deploy with "Get Pages site failed:
+      # Not Found" before someone manually enables Pages in Settings. Needs the
+      # `pages: write` permission already granted above. See docs/README setup.
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

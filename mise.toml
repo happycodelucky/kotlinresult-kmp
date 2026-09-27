@@ -1,0 +1,329 @@
+# mise — toolchain pins and task surface for the __PROJECT_NAME__ repo.
+# Run `mise install` to provision tools; `mise tasks` to list runnable tasks.
+#
+# This file is the task contract: humans and agents (Claude/Codex) drive every
+# build/test/lint/publish action through `mise run <task>`. CLAUDE.md §11 points
+# here.
+#
+# Keep in sync with:
+#   gradle/libs.versions.toml                 (Kotlin, AGP, SKIE, JDK target)
+#   gradle/wrapper/gradle-wrapper.properties  (distributionUrl)
+#
+# Single source of truth for non-Gradle build deps. Versions for Kotlin, AGP,
+# SKIE, KMMBridge, ktlint-gradle, etc. live in gradle/libs.versions.toml
+# (CLAUDE.md §3) — mise must not duplicate them.
+#
+# Bootstrap on a fresh machine:
+#   brew install mise
+#   mise trust
+#   mise install
+#
+# Xcode is NOT managed by mise. Install the latest stable Xcode that SKIE
+# supports.
+
+[tools]
+# JDK 21 LTS, Apple Silicon aarch64. The BUILD JDK only — bytecode level is the
+# catalog's `jvm-target`. Not 25 yet: detekt 1.23.8's embedded Kotlin compiler
+# crashes on JDK 25 (detekt/detekt#8714, fixed only in the 2.x alphas).
+java     = "temurin-21"
+gradle   = "9.7.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
+python   = "3.14"         # mkdocs toolchain (docs:* tasks).
+xcodegen = "latest"       # apps/ios + apps/macos project generation.
+gh       = "latest"       # release.yml uses gh.
+
+# Deliberately NOT pinned here:
+#   - kotlin: gradle/libs.versions.toml owns it (CLAUDE.md §3).
+#   - cocoapods: forbidden (CLAUDE.md §12).
+#   - node: not used in this repo.
+
+# ---------------------------------------------------------------------------
+# Tasks. Naming: `domain:action`, colon-separated, lowercase. Lowercase
+# ios/macos in task names is fine — these are CLI tokens, not source-identifier
+# symbols. The Apple-casing rule (CLAUDE.md §7) still applies to file names,
+# types, and comments.
+#
+# Both published modules (:src and :src-testing) are scoped explicitly where it
+# matters — Gradle's `check` is per-project, so `:src:check` alone never runs
+# `:src-testing`'s suite.
+# ---------------------------------------------------------------------------
+
+# --- build -----------------------------------------------------------------
+
+[tasks."build:src"]
+description = "Assemble the :src library (all production targets)."
+run = "./gradlew :src:assemble"
+
+[tasks."build:ios"]
+description = "Link debug iOS framework slices (device + Apple Silicon simulator)."
+run = """
+./gradlew :src:linkDebugFrameworkIosArm64 \
+          :src:linkDebugFrameworkIosSimulatorArm64
+"""
+
+[tasks."build:macos"]
+description = "Link the debug macOS framework slice (Apple Silicon)."
+run = "./gradlew :src:linkDebugFrameworkMacosArm64"
+
+[tasks."build:android"]
+description = "Assemble the Android AAR."
+run = "./gradlew :src:assembleAndroidMain"
+
+[tasks."build:jvm"]
+description = "Compile + jar the JVM desktop/server target."
+run = "./gradlew :src:jvmJar"
+
+[tasks."build:samples"]
+description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `check` never builds them."
+# The samples are excluded from lint/check (demo scaffolding, not shipped code),
+# but they must still COMPILE: AndroidX AARs impose compileSdk floors
+# (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
+# runs this. See .claude/lessons/LESSONS.md N-006.
+run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
+
+[tasks."build:xcframework"]
+description = "Build the release XCFramework (all slices — iosArm64, iosSimulatorArm64, macosArm64)."
+run = "./gradlew :src:assembleSrcKitXCFramework"
+
+# --- test ------------------------------------------------------------------
+
+[tasks.test]
+description = "Fast inner-loop tests — macOS arm64 only (covers commonTest), both modules."
+run = "./gradlew :src:macosArm64Test :src-testing:macosArm64Test"
+
+[tasks."test:jvm"]
+description = "JVM unit tests (fastest — no K/N compile), both modules."
+run = "./gradlew :src:jvmTest :src-testing:jvmTest"
+
+[tasks."test:ios"]
+description = "iOS simulator arm64 tests (slower — boots a simulator), both modules."
+run = "./gradlew :src:iosSimulatorArm64Test :src-testing:iosSimulatorArm64Test"
+
+[tasks."test:android"]
+description = "Android host unit tests, both modules."
+run = "./gradlew :src:testAndroidHostTest :src-testing:testAndroidHostTest"
+
+[tasks."test:apple"]
+description = "Both Apple test targets (macOS arm64 + iOS simulator arm64)."
+depends = ["test", "test:ios"]
+
+[tasks."test:all"]
+description = "Every test target across every platform."
+depends = ["test", "test:ios", "test:android", "test:jvm"]
+
+# --- lint / format / check -------------------------------------------------
+
+[tasks.check]
+description = "Full local check — what CI runs: ktlint + detekt + every test target, both modules."
+run = "./gradlew :src:check :src-testing:check"
+
+[tasks.lint]
+description = "ktlint + detekt only (no tests), both modules."
+run = "./gradlew :src:ktlintCheck :src:detekt :src-testing:ktlintCheck :src-testing:detekt"
+
+[tasks.format]
+description = "Auto-fix ktlint findings where possible, both modules."
+run = "./gradlew :src:ktlintFormat :src-testing:ktlintFormat"
+
+# --- public API / ABI ------------------------------------------------------
+# The committed dumps under <module>/api/ are the reference for the public
+# surface. `apiCheck` runs as part of `check` (and CI) — it fails if the public
+# API changed without a deliberate `apiDump`. Review the api/ diff like any other
+# code change.
+
+[tasks."api:check"]
+description = "Verify the public API/ABI matches the committed dump (also runs inside `check`)."
+run = "./gradlew :src:checkKotlinAbi :src-testing:checkKotlinAbi"
+
+[tasks."api:dump"]
+description = "Regenerate the committed public API/ABI dump after an INTENTIONAL public change. Review + commit the api/ diff."
+run = "./gradlew :src:updateKotlinAbi :src-testing:updateKotlinAbi"
+
+# --- build health ----------------------------------------------------------
+
+[tasks."dependencies:analyze"]
+description = "Dependency hygiene: unused deps, api-vs-implementation misuse, undeclared transitives (dependency-analysis)."
+run = "./gradlew buildHealth"
+
+[tasks."build:profile"]
+description = "Profile a real build — per-task timings, configuration time, dependency resolution (local HTML report)."
+# `--profile` writes build/reports/profile/profile-<timestamp>.html. It stays
+# LOCAL — unlike `--scan`, nothing is uploaded to scans.gradle.com.
+#
+# A REAL build, not `--dry-run`: a profile can only measure work that actually
+# happened. On a fully up-to-date tree there's little to see — run it after a
+# `mise run clean`, or right after a change that forces recompilation, when a
+# build feels slow. Deprecations and configuration-cache problems are listed
+# separately in build/reports/problems/problems-report.html on every build.
+run = "./gradlew assemble --profile"
+
+# --- iteration helpers (Apple) ---------------------------------------------
+
+[tasks."spm:dev"]
+description = "Rebuild the debug XCFramework and point /Package.swift at it (local dev mode)."
+# KMMBridge's `spmDevBuild` builds the debug XCFramework and REWRITES the root
+# /Package.swift to a `.binaryTarget(path: …)` pointing at the local build, so
+# the sample apps pick up local Kotlin edits without Gradle inside Xcode. The
+# committed Package.swift on main is always a local-dev form; the released
+# remote `.binaryTarget(url:checksum:)` form exists only on each vX.Y.Z tag
+# (.github/PUBLISHING.md). KMMBridge's rewrite differs from the committed file:
+# don't commit it — `mise run spm:restore` restores it.
+run = "./gradlew :src:spmDevBuild"
+
+[tasks."spm:restore"]
+description = "Restore the committed /Package.swift after spm:dev rewrote it."
+run = "git restore Package.swift"
+
+[tasks."xcodeproj:ios"]
+description = "Generate apps/ios/iOSApp.xcodeproj from project.yml (needs xcodegen)."
+dir = "apps/ios"
+run = "xcodegen generate --spec project.yml"
+
+[tasks."xcodeproj:macos"]
+description = "Generate apps/macos/macOSApp.xcodeproj from project.yml."
+dir = "apps/macos"
+run = "xcodegen generate --spec project.yml"
+
+# --- open (IDE / Xcode) ----------------------------------------------------
+
+[tasks."open:ios"]
+description = "spm:dev + xcodegen + open apps/ios in Xcode."
+depends = ["spm:dev", "xcodeproj:ios"]
+dir = "apps/ios"
+run = "open iOSApp.xcodeproj"
+
+[tasks."open:macos"]
+description = "spm:dev + xcodegen + open apps/macos in Xcode."
+depends = ["spm:dev", "xcodeproj:macos"]
+dir = "apps/macos"
+run = "open macOSApp.xcodeproj"
+
+[tasks."open:android"]
+description = "Open apps/android in Android Studio."
+run = "open -a 'Android Studio' apps/android"
+
+# --- docs ------------------------------------------------------------------
+# mkdocs site lives under /docs; Dokka HTML for the public API is mirrored into
+# docs/api/ by the root `copyDokkaToDocs` task.
+
+[tasks."docs:install"]
+description = "Install the pinned mkdocs toolchain into the active python."
+run = "pip install -r docs/requirements.txt"
+
+[tasks."docs:dokka"]
+description = "Generate Dokka HTML and mirror it into docs/api/."
+run = "./gradlew copyDokkaToDocs"
+
+[tasks."docs:check"]
+description = "Validate docs structure (nav coverage, recipes have code)."
+run = "python3 docs/check.py"
+
+[tasks."docs:serve"]
+description = "Local mkdocs preview at http://localhost:8000."
+depends = ["docs:dokka"]
+run = "mkdocs serve"
+
+[tasks."docs:build"]
+description = "Strict mkdocs build — what CI runs."
+depends = ["docs:dokka", "docs:check"]
+run = "mkdocs build --strict"
+
+[tasks."docs:build:only"]
+description = "Strict mkdocs build, assuming docs:dokka + docs:check already ran (CI uses this)."
+run = "mkdocs build --strict"
+
+# --- changesets / release notes ------------------------------------------------
+# Every PR that reaches consumers adds a changeset (.changeset/README.md); the
+# Release PR workflow turns the pending ones into the next version + changelog.
+# scripts/changeset.py is stdlib-only Python (the mkdocs python above).
+
+[tasks.changeset]
+description = "Add a changeset for this branch (.changeset/<branch>.md). Prompts for title / change / description unless passed as flags."
+# raw: the prompts need the terminal. Flags pass straight through, e.g.
+#   mise run changeset --title "Add retries" --change minor --description "…"
+raw = true
+run = "python3 scripts/changeset.py new"
+
+[tasks."changeset:status"]
+description = "Pending changesets, the next version they add up to, and a preview of its changelog entry."
+run = "python3 scripts/changeset.py status"
+
+[tasks."changeset:check"]
+description = "Validate every pending changeset — the PR check runs this (plus: the PR must add one)."
+run = "python3 scripts/changeset.py check"
+
+# --- publish ---------------------------------------------------------------
+
+[tasks."publish:local"]
+description = "Publish both modules to the local Maven repo (~/.m2) as the next -SNAPSHOT (e.g. 0.5.0-SNAPSHOT)."
+# Never the plain gradle.properties version: that is the LAST RELEASE, and a
+# local build of it in ~/.m2 would shadow the real artifact from Maven Central
+# for every local project that lists mavenLocal() first. The version under
+# development instead — what the pending changesets add up to, else the next
+# patch — as a -SNAPSHOT, which a consumer opts into explicitly.
+run = './gradlew publishToMavenLocal -Pversion="$(python3 scripts/changeset.py snapshot)"'
+
+[tasks."publish:maven"]
+description = "Release by hand: gradle.properties' version, or --version X.Y.Z-rc.1 for a pre-release; --dryrun stages only. See scripts/release.sh."
+# The canonical path is CI: merging the release PR runs
+# .github/workflows/release.yml. This is the by-hand equivalent, same rules —
+# the version is gradle.properties' (set by the last release PR) unless
+# --version names a pre-release. scripts/release.sh orchestrates:
+#   --dryrun : publishToMavenCentral (Central STAGING only; nothing committed,
+#              tagged, or released). Safe to run repeatedly.
+#   (real)   : after a typed confirmation — build the XCFramework, publish +
+#              release to Maven Central (IRREVERSIBLE), tag vX.Y.Z on a release
+#              commit carrying Package.swift, and `gh release create`.
+usage = '''
+flag "--version <version>" help="Release this version instead of gradle.properties' — a pre-release like 0.4.0-rc.1."
+flag "--dryrun" help="Upload to Central staging only; no release, tag, or commit."
+'''
+run = '''
+ARGS=""
+[ "{{flag(name='dryrun')}}" = "true" ] && ARGS="$ARGS --dryrun"
+VERSION="{{option(name='version')}}"
+[ -n "$VERSION" ] && ARGS="$ARGS --version $VERSION"
+sh scripts/release.sh $ARGS
+'''
+
+# --- dependencies ----------------------------------------------------------
+# Renovate (renovate.json5) opens PRs in CI; these are the local equivalents.
+
+[tasks."dependencies:outdated"]
+description = "List dependencies with newer STABLE versions (ben-manes gradle-versions-plugin)."
+# Stable-only (no alpha/beta/rc/snapshot) is enforced by the `stableVersion`
+# predicate in build.gradle.kts (CLAUDE.md §3) — wired into this task's
+# rejectVersionIf and into dependencies:update's versionSelector alike.
+# --no-parallel: dependencyUpdates resolves every configuration across all
+# projects, which Gradle forbids under org.gradle.parallel=true (set in
+# gradle.properties). The flag overrides it for this invocation only.
+run = "./gradlew dependencyUpdates --no-parallel"
+
+[tasks."dependencies:update"]
+description = "Rewrite gradle/libs.versions.toml to the latest STABLE versions, then review the diff (version-catalog-update)."
+# Stable-only is enforced by the `stableVersion` predicate in build.gradle.kts
+# (CLAUDE.md §3), passed to version-catalog-update's `versionSelector` — the same
+# predicate dependencies:outdated uses, so pre-releases never reach the catalog.
+# Not truly interactive: it rewrites the catalog; review with `git diff
+# gradle/libs.versions.toml` and accept or revert. A new Kotlin passes the
+# stable filter (2.4.20 is "stable"), but Kotlin is bound above by SKIE — a
+# MANUAL, SKIE-paired change — so the `kotlin` ref is VCU-pinned in the root
+# build script: this task never writes it (same policy as renovate.json5).
+run = "./gradlew versionCatalogUpdate"
+
+# --- aggregates ------------------------------------------------------------
+
+[tasks.ci]
+description = "Run the exact CI sequence locally: check + release XCFramework."
+run = "./gradlew :src:check :src-testing:check :src:assembleSrcKitXCFramework"
+
+[tasks.clean]
+description = "Gradle clean."
+run = "./gradlew clean"
+
+# --- template rendering ----------------------------------------------------
+# This task (and scripts/init.sh) are REMOVED when the template is rendered.
+
+[tasks.init]
+description = "Render this template into a real project. Usage: mise run init <name> [--group g] [--org o] [--display-name 'Name']"
+# Raw args are forwarded so scripts/init.sh owns parsing + validation.
+run = "sh scripts/init.sh {{arg(name='args', var=true)}}"

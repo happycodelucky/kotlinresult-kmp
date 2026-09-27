@@ -1,0 +1,63 @@
+# __PROJECT_NAME__ — iOSApp sample (Xcode project spec for `xcodegen`).
+#
+# Run `mise run xcodeproj:ios` (or `xcodegen generate` from this dir) to emit
+# iOSApp.xcodeproj from this spec. The .xcodeproj is gitignored, so the spec is
+# the single source of truth.
+#
+# The app declares a local Swift Package dependency at `../../` (the repo root
+# Package.swift). `mise run spm:dev` rewrites that Package.swift to point at the
+# locally-built debug __FRAMEWORK__.xcframework, so iOS engineers iterate by
+# re-running spm:dev and rebuilding in Xcode — no Gradle inside Xcode.
+#
+# The package name __FRAMEWORK__ matches the XCFramework's Swift module name
+# (the shared Swift code does `import __FRAMEWORK__`). Add platform capabilities
+# your library needs to the Info/entitlements blocks below (e.g. local-network
+# usage strings, App Transport Security exceptions).
+
+name: iOSApp
+
+options:
+  bundleIdPrefix: com.happycodelucky.__PROJECT_NAME__.example
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+packages:
+  __FRAMEWORK__:
+    path: ../../
+
+targets:
+  iOSApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOSApp
+      - path: ../shared
+    info:
+      path: iOSApp/Info.plist
+      properties:
+        CFBundleDisplayName: __DISPLAY_NAME__
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    entitlements:
+      path: iOSApp/iOSApp.entitlements
+      properties: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.happycodelucky.__PROJECT_NAME__.example.ios
+        PRODUCT_NAME: "__DISPLAY_NAME__"
+        SWIFT_VERSION: "5.10"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_PREVIEWS: "YES"
+        CODE_SIGN_STYLE: Automatic
+        # The XCFramework simulator slice is arm64-only (the library is ARM-only —
+        # no x86_64 native slice). On an Apple Silicon Mac the iOS Simulator runs
+        # arm64, so exclude the x86_64 simulator arch — otherwise a
+        # `generic/platform=iOS Simulator` build tries to compile for x86_64,
+        # finds no matching framework slice, and fails to link.
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+    dependencies:
+      - package: __FRAMEWORK__

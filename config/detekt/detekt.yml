@@ -1,0 +1,39 @@
+# __PROJECT_NAME__ — detekt overrides (layered on buildUponDefaultConfig = true).
+#
+# Only rules that systematically misfire on a typical KMP library are tuned
+# here; everything else stays at detekt's defaults. Each override has a one-line
+# rationale — this is config, not blanket suppression. CLAUDE.md §3 still
+# requires detekt to pass.
+#
+# This is a generic starter. Tighten or loosen per your library's shape — e.g.
+# wire-format parsers may need higher CyclomaticComplexMethod; data-carrier-heavy
+# APIs may need higher LongParameterList. Document each change you make.
+
+complexity:
+  LongParameterList:
+    # Immutable data carriers can be wide. Raise only if your domain has them.
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    thresholdInClasses: 16
+
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignoreNumbers: ['-1', '0', '1', '2']
+  MaxLineLength:
+    # The project's only line-length limit — ktlint's is off in the root
+    # .editorconfig, so the two linters can't disagree.
+    maxLineLength: 140
+
+exceptions:
+  TooGenericExceptionCaught:
+    # Platform I/O (sockets, file, HTTP) often must catch broadly to stay
+    # resilient. Every such catch should rethrow CancellationException first and
+    # degrade to a typed failure otherwise. Leave active unless your library does
+    # the resilient-I/O pattern; flip to false then (and document why).
+    active: true

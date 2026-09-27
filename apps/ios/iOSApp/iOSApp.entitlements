@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  __PROJECT_NAME__ — iOS sample entitlements.
+
+  Empty by default. Add the capabilities your library needs, e.g.:
+    - com.apple.developer.networking.multicast (joining a multicast group;
+      Apple gates this behind a request form)
+    - keychain access groups, app groups, background modes, etc.
+-->
+<plist version="1.0">
+<dict>
+</dict>
+</plist>

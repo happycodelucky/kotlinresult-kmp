@@ -1,0 +1,195 @@
+# =============================================================================
+# __PROJECT_NAME__ — single source of truth for dependency versions (CLAUDE.md §3).
+#
+# IMPORTANT: before bumping any version, web-search the latest stable. Versions
+# in training data go stale fast. Stable only on `main` (no EAP / RC / Beta).
+# The Kotlin pin is bounded above by SKIE's supported range — do not bump Kotlin
+# past what SKIE supports.
+#
+# mise.toml pins the non-Gradle tools (JDK, gradle, xcodegen, gh); this catalog
+# owns everything in the Gradle build graph. The two must agree on the Kotlin /
+# AGP / JDK story (see mise.toml header).
+#
+# NOTE: `mise run dependencies:update` (version-catalog-update) rewrites this
+# file. The root build script configures it to keep entry order, keep
+# findVersion("…")-only keys (android-compile-sdk, jvm-target, …), and never
+# touch the SKIE-bound `kotlin` ref. It still strips BLANK LINES and END-OF-LINE
+# comments — so comments here go on their own line above the entry, where they
+# survive. After running it, restore the blank lines and review the bumps.
+#
+# NAMING: every key, in every section, is lowercase kebab-case. Dashes become
+# nested accessors (`android-compile-sdk` → libs.versions.android.compile.sdk),
+# so a key must never be a whole-segment prefix of another: adding
+# `ktlint-gradle` beside `ktlint` turns libs.versions.ktlint into a group and
+# breaks `.get()`. Name siblings by artifact instead (ktlint-cli, ktlint-gradle).
+# =============================================================================
+
+[versions]
+
+# --- Toolchain --------------------------------------------------------------
+# Kotlin 2.4.10 is the highest version SKIE 0.10.14 supports. CLAUDE.md §3:
+# "If SKIE doesn't yet support a Kotlin version, we wait. Don't bump Kotlin
+# past SKIE's supported range." This is a paired bump — verify SKIE's changelog
+# states support for the target Kotlin before raising either pin.
+# Kotlin 2.4.20 went stable 2026-09-07, but SKIE's `versionSupport.kotlin` still
+# ends at 2.4.0(2.4.10); 2.4.20 support is open as touchlab/SKIE#205. Pinned by
+# the VCU `pin {}` in the root build script so dependencies:update can't bump it.
+# NOTE: KGP 2.4.10 is only *fully* supported up to Gradle 9.5.0 / AGP 9.1.0;
+# the Gradle and AGP pins here run ahead of that (AGP 9.4 requires Gradle
+# ≥ 9.6.0). Verified by the full check, not by the compatibility table — the
+# gap closes when SKIE unlocks 2.4.20 (supported up to Gradle 9.7.0).
+kotlin = "2.4.10"
+# com.android.kotlin.multiplatform.library variant. AGP 9.4 supports up to API 37.
+# NOTE: dependency-analysis 3.19.2 prints "only known to work with AGP between
+# 8.10.0 and 9.3.1 … proceed at your own risk" on 9.4.x — its AGP_MAX simply lags
+# the AGP release train. Advisory only; the warning clears when DAGP raises
+# AGP_MAX.
+agp = "9.4.1"
+# Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
+skie = "0.10.14"
+# XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
+kmmbridge = "1.2.1"
+# Kotlin API doc generator; Dokka v2 task layout.
+dokka = "2.2.0"
+# vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
+# Sonatype Central Portal (central.sonatype.com). Pins the JDK17 / Gradle 9 /
+# AGP 9 floor and supports com.android.kotlin.multiplatform.library publications.
+# Coexists with KMMBridge — each plugin owns its own repository and
+# publish-umbrella task, so there's no cross-contamination.
+maven-publish = "0.37.0"
+
+# --- Dependency management (mise dependencies:outdated / dependencies:update) -
+# Two independent plugins: ben-manes REPORTS available updates
+# (dependencyUpdates); version-catalog-update REWRITES this file in place. VCU
+# has resolved versions itself since 1.0 — it does not read ben-manes output.
+# Both are fed the same stable-only predicate in the root build.gradle.kts, so
+# the report and the rewrite can never disagree on what "stable" means.
+ben-manes-versions = "0.64.0"
+version-catalog-update = "1.1.1"
+
+# --- Build health / dependency hygiene --------------------------------------
+# dependency-analysis: flags unused deps, api-vs-implementation misuse, and
+# transitive deps you rely on directly. Run via `mise run dependencies:analyze`.
+# 3.18.0 is the first release that reads Kotlin 2.4.x bytecode metadata (it
+# isolates kotlin-metadata-jvm into workers) — 3.16.0 hard-failed `explodeJar`
+# on it, which is why analysis used to be gated off. Upstream issue #1724.
+# (gradle-doctor was removed: its JDK checks duplicated mise + the daemon JVM
+# criteria, it had no release since 2025-08, and it used Gradle APIs that fail
+# in Gradle 10. `mise run build:profile` covers build timing — LESSONS N-009.)
+dependency-analysis = "3.19.2"
+
+# --- Android SDK ------------------------------------------------------------
+# API 37 = Android 17. A floor, not a preference: AndroidX Compose 1.12 and
+# Lifecycle 2.11 AARs declare minCompileSdk=37 in their aar-metadata, which
+# AGP's checkAarMetadata enforces on the sample app.
+android-compile-sdk = "37"
+# arm64-v8a only (CLAUDE.md §4).
+android-min-sdk = "30"
+# Bytecode level for the android + jvm targets (read by the convention plugin).
+# A consumer contract — independent of the JDK that runs the build (mise.toml).
+jvm-target = "21"
+
+# --- Apple deployment targets ----------------------------------------------
+ios-deployment-target = "18.0"
+macos-deployment-target = "15.0"
+
+# --- kotlinx ----------------------------------------------------------------
+kotlinx-coroutines = "1.11.0"
+kotlinx-atomicfu = "0.33.0"
+
+# --- Logging ----------------------------------------------------------------
+# Kermit — multiplatform logging baseline, wired into every module via the
+# __PROJECT_NAME__.kmp-library convention plugin (CLAUDE.md §5).
+kermit = "2.2.0"
+
+# --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
+androidx-activity-compose = "1.13.0"
+androidx-lifecycle-runtime-compose = "2.11.0"
+androidx-compose-bom = "2026.09.00"
+
+# --- Testing ----------------------------------------------------------------
+turbine = "1.2.1"
+# Kotest — assertions + property engine only; runner is kotlin.test (CLAUDE.md §10).
+kotest = "6.2.5"
+
+# --- Lint ------------------------------------------------------------------
+# The ktlint tool itself (com.pinterest.ktlint:ktlint-cli), run by the plugin below.
+ktlint-cli = "1.8.0"
+# The org.jlleitschuh.gradle.ktlint Gradle plugin.
+ktlint-gradle = "14.2.0"
+# detekt 1.23.8 is the latest stable; the 2.x line is alpha-only and CLAUDE.md
+# §3 bans pre-stable on main.
+detekt = "1.23.8"
+
+
+[libraries]
+
+# --- kotlinx ----------------------------------------------------------------
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "kotlinx-atomicfu" }
+
+# --- Logging ----------------------------------------------------------------
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+
+# --- Gradle plugin artifacts (build-logic only) ------------------------------
+# Compile-classpath dependencies for the precompiled convention plugins under
+# /gradle/plugins. Same version refs as the [plugins] aliases below, so the
+# main build and gradle/plugins can never apply different plugin versions.
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+skie-gradle-plugin = { module = "co.touchlab.skie:co.touchlab.skie.gradle.plugin", version.ref = "skie" }
+dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+vanniktech-maven-publish-gradle-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "maven-publish" }
+
+# --- Sample-app deps (apps/android only) ------------------------------------
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle-runtime-compose" }
+# lifecycle-viewmodel-compose — provides the `viewModel { }` composable. From the
+# same lifecycle BOM line as runtime-compose; version pinned to match.
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle-runtime-compose" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidx-compose-bom" }
+# These come from the BOM — no version refs.
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+
+# --- Testing ----------------------------------------------------------------
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
+
+
+[plugins]
+
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+# Standard AGP application plugin for the Android sample app (separate from the
+# multiplatform-library variant used by :src).
+android-application = { id = "com.android.application", version.ref = "agp" }
+# Compose Compiler plugin shipped by Kotlin since 2.0; pin matches `kotlin`.
+# Applied in the Android sample. AGP 9.0+ ships Kotlin support built in, so no
+# separate kotlin.android alias.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+skie = { id = "co.touchlab.skie", version.ref = "skie" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+# kmmbridge-github — applied in src/build.gradle.kts. Publishes the
+# SKIE-enhanced XCFramework zip as a GitHub *Release* asset (public,
+# unauthenticated download) and regenerates the root Package.swift to reference
+# it by URL + checksum. The .github variant is a superset of the core plugin in
+# 1.2.x — applying both produces a duplicate-extension error.
+kmmbridge-github = { id = "co.touchlab.kmmbridge.github", version.ref = "kmmbridge" }
+# Vanniktech Maven Publish — Maven Central Portal upload + GPG signing.
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+# Dependency-update tooling (mise dependencies:outdated / dependencies:update).
+# Plugin id moved to the `io.github` namespace; the old `com.github.…` id still
+# resolves but warns on every configuration. The Java package (and therefore the
+# `DependencyUpdatesTask` import in the root build script) is unchanged.
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "version-catalog-update" }
+# Build-health tooling (mise dependencies:analyze).
+dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependency-analysis" }

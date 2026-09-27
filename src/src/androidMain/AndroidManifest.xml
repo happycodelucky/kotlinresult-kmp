@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  __PROJECT_NAME__ — Android library manifest.
+
+  A KMP Android library needs a manifest even when it declares no permissions or
+  components (the AGP KMP library plugin requires it; the namespace is supplied
+  by the convention plugin). Add <uses-permission> entries here if your library
+  needs them — the Manifest Merger pulls them into consuming apps automatically.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+</manifest>

@@ -1,0 +1,13 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.happycodelucky.__PROJECT_NAME__:src>
+final class com.happycodelucky.src/Greeter { // com.happycodelucky.src/Greeter|null[0]
+    constructor <init>() // com.happycodelucky.src/Greeter.<init>|<init>(){}[0]
+
+    final fun greet(): kotlin/String // com.happycodelucky.src/Greeter.greet|greet(){}[0]
+}

@@ -1,0 +1,457 @@
+name: Release
+
+# Two distribution channels ship from this workflow:
+#
+#   1. Maven Central (vanniktech plugin) — Android AAR, kotlinMultiplatform
+#      metadata, per-target klibs. For Gradle / KMP consumers.
+#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced __FRAMEWORK__.xcframework
+#      zip, attached to the vX.Y.Z release and referenced from the tagged
+#      Package.swift by URL + checksum. For pure-Swift SPM consumers; no
+#      Gradle build, no authentication. GitHub *Releases*, not GitHub
+#      *Packages* — Packages requires a PAT even to download from public
+#      repos, which is unusable for an open-source Swift package.
+#
+# --- How a release starts ----------------------------------------------------
+#
+# Automatically, by merging a release PR. release-pr.yml turns the pending
+# changesets into a "Release vX.Y.Z" PR that bumps `version=` in
+# gradle.properties. This workflow's push trigger watches that file; the
+# `plan` job releases when a push to main CHANGED the version to one that has
+# no tag yet. It is a real, irreversible publish — merging the release PR is
+# the approval. If it fails, re-run the failed jobs from the Actions UI: a
+# re-run replays the same commit, and the release job resumes (below).
+#
+# Manually (workflow_dispatch), for pre-releases and retries:
+#
+#   version  Empty: the version in gradle.properties — retry a release that
+#            failed. A pre-release (0.4.0-rc.1, 1.0.0-beta.2) can be cut from
+#            any branch; its notes are the changesets pending there. A STABLE
+#            version must equal gradle.properties' on main: stable versions
+#            come only from release PRs, so the changelog, main and Maven
+#            Central can't disagree.
+#   dryRun   Default true: upload to the Central Portal staging area only,
+#            review at https://central.sonatype.com/, then Publish or Drop by
+#            hand. Maven Central releases are irreversible — Sonatype never
+#            deletes a published artifact.
+#
+# Only a successful stable release deploys the docs site (docs.yml): pushes to
+# main build it without deploying, and pre-releases leave it alone.
+on:
+  push:
+    branches: [main]
+    paths: [gradle.properties]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release. Empty = gradle.properties' (retry). A pre-release like 0.4.0-rc.1 may come from any branch.
+        required: false
+        type: string
+        default: ""
+      dryRun:
+        description: Upload to Central staging only; do not release. Default true.
+        required: true
+        type: boolean
+        default: true
+
+# `contents: write` covers everything the SPM side needs: KMMBridge creating
+# the GitHub Release + uploading the XCFramework zip asset, and pushing the
+# version tag. All of it happens only on a real (non-dry-run) release.
+#
+# `pages: write` + `id-token: write` are for the `docs` job, which calls the
+# reusable Docs workflow to deploy the site. A reusable workflow's jobs run
+# with the *caller's* token permissions intersected with their own, so the
+# caller must grant these even though only the called workflow uses them.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # Cheap Ubuntu gate: most pushes that touch gradle.properties aren't
+  # releases, and deciding that shouldn't cost a macOS runner.
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.plan.outputs.release }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      dry-run: ${{ steps.plan.outputs.dry-run }}
+      prerelease: ${{ steps.plan.outputs.prerelease }}
+
+    steps:
+      # Full history: the push path reads gradle.properties at the pre-push
+      # commit, and the tag check needs tags.
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide what to release
+        id: plan
+        env:
+          BEFORE: ${{ github.event.before }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DRY_RUN: ${{ inputs.dryRun }}
+        run: |
+          set -euo pipefail
+          CURRENT=$(python3 scripts/changeset.py current)
+
+          skip() {
+            echo "::notice::No release: $1"
+            echo "No release: $1" >> "$GITHUB_STEP_SUMMARY"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # The un-rendered template never releases: its coordinates are tokens.
+            [[ "$GITHUB_REPOSITORY" == "happycodelucky/kmp-template" ]] && skip "the un-rendered template doesn't release."
+            # Release only when THIS push changed the version. An unrelated
+            # gradle.properties edit leaves it alone; the push that first adds
+            # the key (nothing before it) isn't a release either.
+            PREVIOUS=$(python3 scripts/changeset.py current --ref "$BEFORE" 2>/dev/null || true)
+            [[ -n "$PREVIOUS" ]] || skip "gradle.properties had no version before this push."
+            [[ "$PREVIOUS" != "$CURRENT" ]] || skip "the version is unchanged ($CURRENT)."
+            if git rev-parse -q --verify "refs/tags/v$CURRENT" >/dev/null; then
+              skip "v$CURRENT is already tagged."
+            fi
+            VERSION=$CURRENT
+            DRY_RUN=false
+          else
+            VERSION=${INPUT_VERSION#v}
+            VERSION=${VERSION:-$CURRENT}
+            DRY_RUN=$INPUT_DRY_RUN
+
+            # SemVer 2.0, with the pre-release restricted to dot-separated
+            # lowercase alphanumeric segments (a hyphen may not start one):
+            # uppercase is a Maven version-comparison foot-gun, and
+            # `0.3.42--beta` compares inconsistently across tools.
+            if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9a-z][0-9a-z-]*(\.[0-9a-z][0-9a-z-]*)*)?$ ]]; then
+              echo "::error::'$VERSION' is not a valid version. Use X.Y.Z, or X.Y.Z-suffix with a lowercase suffix like rc.1, beta, preview."
+              exit 1
+            fi
+            if [[ "$VERSION" != *-* ]]; then
+              # KMMBridge tags against, and the docs deploy from, main.
+              if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+                echo "::error::Stable releases run from main (got '$GITHUB_REF_NAME'). Pre-releases (X.Y.Z-suffix) can run from any branch."
+                exit 1
+              fi
+              if [[ "$VERSION" != "$CURRENT" ]]; then
+                echo "::error::Stable versions come from release PRs: $VERSION isn't the $CURRENT in gradle.properties on main."
+                echo "::error::Merge the release PR (or, for an exact version, add 'version: $VERSION' to a changeset), or cut a pre-release like $VERSION-rc.1."
+                exit 1
+              fi
+            fi
+          fi
+
+          PRERELEASE=false
+          [[ "$VERSION" == *-* ]] && PRERELEASE=true
+          {
+            echo "release=true"
+            echo "version=$VERSION"
+            echo "tag=v$VERSION"
+            echo "dry-run=$DRY_RUN"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+          # Surface the plan on the run page before anything irreversible
+          # happens. If it looks wrong, cancel the run from the Actions UI.
+          {
+            echo "## Release plan"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Trigger | \`$GITHUB_EVENT_NAME\` on \`$GITHUB_REF_NAME\` |"
+            echo "| gradle.properties | \`$CURRENT\` |"
+            echo "| **Version** | **\`$VERSION\`** |"
+            echo "| Tag | \`v$VERSION\` |"
+            echo "| Pre-release? | \`$PRERELEASE\` |"
+            echo "| Dry run? | \`$DRY_RUN\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Releasing $VERSION (dry run: $DRY_RUN, pre-release: $PRERELEASE)"
+
+  release:
+    name: Publish ${{ needs.plan.outputs.version }}
+    needs: plan
+    if: needs.plan.outputs.release == 'true'
+    runs-on: macos-latest
+
+    # The four MAVEN_CENTRAL_* secrets live on the `continuous-deployment`
+    # GitHub environment, not the repository scope. Without this binding
+    # `secrets.MAVEN_CENTRAL_*` resolves to the empty string at runtime
+    # and vanniktech fails with cryptic auth / signing errors that look
+    # like a credentials problem in the downstream tool.
+    environment: continuous-deployment
+
+    # One run per version at a time: a second run of the same version queues
+    # and then trips the "already released" guard. Keyed by version (not
+    # workflow-wide) so an unrelated queued run can never cancel a pending
+    # release.
+    concurrency:
+      group: release-${{ needs.plan.outputs.version }}
+      cancel-in-progress: false
+
+    env:
+      RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+      RELEASE_TAG: ${{ needs.plan.outputs.tag }}
+      DRY_RUN: ${{ needs.plan.outputs.dry-run }}
+      PRERELEASE: ${{ needs.plan.outputs.prerelease }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          # Full history + tags for the tag steps and release notes.
+          fetch-depth: 0
+
+      # Fail before anything irreversible — and make a retry resume instead of
+      # colliding with its own earlier progress. The steps run in order:
+      # Maven Central, then the GitHub Release (KMMBridge), then the tag.
+      #
+      #   GitHub Release exists     → already released; fail.
+      #   on Maven Central, no GH   → resume: skip Maven, finish the SPM half.
+      #   on neither                → publish.
+      #
+      # Checks every module that ships under com.happycodelucky.__PROJECT_NAME__
+      # (the library plus the `__PROJECT_NAME__-testing` fakes — they version and
+      # ship together). Append artifact ids when new publishable modules land.
+      # The grep is exact-match on `<version>X.Y.Z</version>` so 0.3.1 never
+      # matches 0.3.10. Maven metadata can lag a release by ~30 min, so a
+      # too-quick retry may still try to publish and get Central's duplicate
+      # error — wait, and re-run.
+      - name: Check what's already published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --json tagName >/dev/null 2>&1; then
+            echo "::error::$RELEASE_TAG is already released on GitHub. Nothing to do — or, to redo it, delete that release and its tag first."
+            exit 1
+          fi
+
+          ESCAPED="${RELEASE_VERSION//./\\.}"
+          ARTIFACTS=(__PROJECT_NAME__ __PROJECT_NAME__-testing)
+          FOUND=0
+          for ARTIFACT in "${ARTIFACTS[@]}"; do
+            METADATA_URL="https://repo1.maven.org/maven2/com/happycodelucky/__PROJECT_NAME__/${ARTIFACT}/maven-metadata.xml"
+            if curl -sf "$METADATA_URL" 2>/dev/null | grep -qE "<version>${ESCAPED}</version>"; then
+              echo "Already on Maven Central: ${ARTIFACT}:${RELEASE_VERSION}"
+              FOUND=$((FOUND + 1))
+            fi
+          done
+
+          if (( FOUND == 0 )); then
+            echo "MAVEN_PUBLISHED=false" >> "$GITHUB_ENV"
+          elif (( FOUND == ${#ARTIFACTS[@]} )); then
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "::error::$RELEASE_VERSION is already on Maven Central — there's nothing to stage."
+              exit 1
+            fi
+            echo "::warning::$RELEASE_VERSION is already on Maven Central — resuming: skipping Maven, publishing the SPM release."
+            echo "MAVEN_PUBLISHED=true" >> "$GITHUB_ENV"
+          else
+            echo "::error::Only some modules of $RELEASE_VERSION are on Maven Central. Check https://central.sonatype.com/publishing/deployments and finish or drop the deployment by hand."
+            exit 1
+          fi
+
+          if git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null; then
+            echo "::warning::Tag $RELEASE_TAG exists without a GitHub Release (an earlier run stopped part-way); it will be moved onto this release."
+          fi
+
+      # mise pins JDK, gradle, etc. (see /mise.toml). setup-gradle below is
+      # layered on top solely for its build / dependency cache.
+      - name: Set up mise toolchain
+        uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+
+      # `cache-provider: basic` = the MIT-licensed caching provider, never the
+      # proprietary default. See .github/workflows/ci.yml for the full rationale.
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      # Vanniktech `mavenPublishing { }` exposes two umbrella tasks (see
+      # gradle/plugins/…publish.gradle.kts). The "stops at staging" behaviour
+      # of the dry-run task is contingent on `automaticRelease = false` — if
+      # that ever flips back to `true` the dry run silently becomes a real
+      # publish.
+      #
+      #   * publishToMavenCentral             — build + sign + upload to
+      #     Central staging. STOPS before the irreversible "release" step.
+      #   * publishAndReleaseToMavenCentral   — full pipeline. Uploads,
+      #     closes the deployment, and releases it to public Maven Central.
+      #     Cannot be undone.
+      #
+      # The Gradle invocation is *not* scoped to a module (no `:src:` prefix),
+      # so it runs across every module that applies the publish convention
+      # plugin — currently `:src` and `:src-testing`. Each publishes every
+      # publication the KMP plugin registered (Android AAR, jvm jar,
+      # kotlinMultiplatform metadata, per-target klibs) plus sources / javadoc
+      # jars and detached GPG signatures.
+      - name: Publish to Maven Central (dry run — staging only)
+        if: env.DRY_RUN == 'true'
+        env:
+          # Vanniktech reads these four properties; Gradle auto-populates
+          # them from ORG_GRADLE_PROJECT_* env vars. See .github/PUBLISHING.md.
+          ORG_GRADLE_PROJECT_mavenCentralUsername:       ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword:       ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          # In-memory GPG key: paste the full ASCII-armoured private key
+          # block (`-----BEGIN PGP PRIVATE KEY BLOCK-----` … `-----END PGP
+          # PRIVATE KEY BLOCK-----`) into the GitHub secret. No keyring on
+          # the runner; vanniktech imports the key in-process.
+          ORG_GRADLE_PROJECT_signingInMemoryKey:         ${{ secrets.MAVEN_CENTRAL_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_CENTRAL_SIGNING_KEY_PASSWORD }}
+        run: |
+          ./gradlew publishToMavenCentral \
+            -Pversion="$RELEASE_VERSION" --no-daemon
+
+      - name: Publish to Maven Central (release — IRREVERSIBLE)
+        if: env.DRY_RUN != 'true' && env.MAVEN_PUBLISHED != 'true'
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername:       ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword:       ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey:         ${{ secrets.MAVEN_CENTRAL_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_CENTRAL_SIGNING_KEY_PASSWORD }}
+        run: |
+          ./gradlew publishAndReleaseToMavenCentral \
+            -Pversion="$RELEASE_VERSION" --no-daemon
+
+      # --- SPM distribution (KMMBridge) ----------------------------------
+      #
+      # Runs only on a real publish — a dry run uploads nothing, so there is
+      # no asset for Package.swift to reference. `kmmBridgePublish` does the
+      # heavy lifting in one Gradle invocation:
+      #
+      #   1. Builds the SKIE-enhanced release __FRAMEWORK__.xcframework (all
+      #      three slices: iosArm64, iosSimulatorArm64, macosArm64).
+      #   2. Zips it and creates the GitHub Release tagged `vX.Y.Z` (the tag
+      #      lands on the default-branch HEAD — moved onto the release commit
+      #      two steps later).
+      #   3. Uploads `__FRAMEWORK__.xcframework.zip` as a release asset.
+      #   4. Regenerates the root Package.swift with the asset URL + sha256
+      #      checksum.
+      #
+      # Two non-obvious requirements (kmmbridge 1.2.1):
+      #   * `-PENABLE_PUBLISHING=true` — KMMBridge only registers the
+      #     `kmmBridgePublish` task when this property is set. Passed on the
+      #     CI command line only, so local builds can never accidentally
+      #     publish.
+      #   * `GITHUB_REPO` / `GITHUB_PUBLISH_TOKEN` — KMMBridge reads these
+      #     as *Gradle properties* (not env vars), hence the
+      #     ORG_GRADLE_PROJECT_ prefix, which Gradle maps onto project
+      #     properties of the un-prefixed name.
+      - name: Publish XCFramework to GitHub Release (KMMBridge)
+        if: env.DRY_RUN != 'true'
+        env:
+          ORG_GRADLE_PROJECT_GITHUB_REPO: ${{ github.repository }}
+          ORG_GRADLE_PROJECT_GITHUB_PUBLISH_TOKEN: ${{ github.token }}
+        run: |
+          ./gradlew :src:kmmBridgePublish \
+            -Pversion="$RELEASE_VERSION" \
+            -PENABLE_PUBLISHING=true \
+            --no-daemon
+
+      # KMMBridge writes the GitHub *API* asset URL into Package.swift
+      # (https://api.github.com/repos/…/releases/assets/<id>.zip). SPM can
+      # consume that — it sends `Accept: application/octet-stream` — but the
+      # URL serves JSON to plain HTTP clients and every download burns the
+      # anonymous API quota (60 requests/hour/IP), which bites shared CI
+      # egress IPs. The public browser URL serves the same bytes (same
+      # checksum) with no quota and no special headers, and is fully
+      # deterministic: tag + fixed asset name. Rewrite, then prove the
+      # manifest still parses (`dump-package` is offline — it never fetches
+      # the binary).
+      - name: Point Package.swift at the public release-asset URL
+        if: env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/__FRAMEWORK__.xcframework.zip"
+
+          sed -i '' -E "s|^let remoteKotlinUrl = .*$|let remoteKotlinUrl = \"${ASSET_URL}\"|" Package.swift
+
+          # Belt-and-braces: if KMMBridge ever renames the variable, sed
+          # silently matches nothing — catch that here instead of shipping a
+          # tag whose Package.swift still points at the API URL.
+          grep -qF "$ASSET_URL" Package.swift
+          swift package dump-package > /dev/null
+          echo "Package.swift now references $ASSET_URL"
+
+      # SPM consumers resolve the manifest FROM THE TAG, then download the
+      # binary it references — so the tag must hold this Package.swift. The
+      # commit that carries it lives only on the tag, never on main: main is
+      # branch-protected (a bot push is rejected), and doesn't need it — main
+      # keeps the local-dev Package.swift the sample apps build against, and
+      # already holds the release's version bump from the release PR. The
+      # release commit is exactly the released tree plus the remote-binary
+      # Package.swift. KMMBridge created the tag on the default-branch HEAD;
+      # force-move it here (Touchlab's own flow does the same).
+      #
+      # Notes: the changelog section the release PR wrote — or, for a
+      # pre-release, the changesets pending on its branch — with GitHub's
+      # generated notes as the fallback. KMMBridge creates the release bare.
+      - name: Tag the release commit, finalize the release
+        if: env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git switch --detach
+          git add Package.swift
+          git commit -m "Release $RELEASE_TAG" \
+            -m "Package.swift points at the $RELEASE_TAG XCFramework release asset."
+          git tag -fa "$RELEASE_TAG" -m "Release $RELEASE_TAG"
+          git push --force origin "refs/tags/$RELEASE_TAG"
+
+          if ! python3 scripts/changeset.py notes "$RELEASE_VERSION" > "$RUNNER_TEMP/notes.md"; then
+            gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f tag_name="$RELEASE_TAG" --jq .body > "$RUNNER_TEMP/notes.md"
+          fi
+          if [[ "$PRERELEASE" == "true" ]]; then
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/notes.md" --prerelease --latest=false
+          else
+            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" \
+              --notes-file "$RUNNER_TEMP/notes.md" --latest
+          fi
+
+      - name: Summary
+        run: |
+          {
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "Dry run complete. Review the staged deployment at"
+              echo "https://central.sonatype.com/publishing/deployments —"
+              echo "Publish to release $RELEASE_VERSION, or Drop to discard."
+            else
+              echo "Released com.happycodelucky.__PROJECT_NAME__:__PROJECT_NAME__:$RELEASE_VERSION"
+              echo ""
+              echo "- Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.__PROJECT_NAME__/__PROJECT_NAME__/$RELEASE_VERSION"
+              echo "- GitHub Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/$RELEASE_TAG"
+              echo "- SPM: https://github.com/${GITHUB_REPOSITORY}.git pinned to $RELEASE_TAG"
+              echo ""
+              echo "Maven Central indexing can take ~30 min to reach https://repo1.maven.org/maven2/."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Deploy the docs site — only after a successful, real, STABLE release. The
+  # site's install snippets render this version; a push to main builds the
+  # site but never deploys it, and pre-releases leave the published site
+  # alone.
+  docs:
+    name: Deploy docs site
+    needs: [plan, release]
+    if: needs.plan.outputs.dry-run != 'true' && needs.plan.outputs.prerelease != 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      deploy: true

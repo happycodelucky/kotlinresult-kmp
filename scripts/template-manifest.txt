@@ -1,0 +1,9 @@
+# Template scaffolding — these paths are DELETED when the template is rendered
+# by scripts/init.sh. One path per line; blank lines and #-comments are ignored.
+#
+# Everything NOT listed here is KEPT (and token-replaced): CLAUDE.md, AGENTS.md,
+# README.md, LICENSE, CONTRIBUTING.md, mise.toml (its [tasks.init] block is
+# stripped, not the whole file), and all build/config/docs/apps sources.
+TEMPLATE.md
+scripts/init.sh
+scripts/template-manifest.txt

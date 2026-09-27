@@ -1,0 +1,8 @@
+# Force contributors through a structured form — no blank issues. This keeps
+# every issue machine-readable (predictable fields for triage, automation, and
+# coding agents). Add contact_links for questions that aren't bug/feature.
+blank_issues_enabled: false
+contact_links:
+  - name: Question / discussion
+    url: https://github.com/happycodelucky/__PROJECT_NAME__/discussions
+    about: Questions, ideas, and help requests — please use Discussions, not issues.
