@@ -177,10 +177,7 @@ public class Result<out T> internal constructor(
 
     /** [onSuccess] of the value or [onFailure] of the exception. Same as `kotlin.Result.fold`. */
     @HiddenFromObjC
-    public inline fun <R> fold(
-        onSuccess: (value: T) -> R,
-        onFailure: (exception: Throwable) -> R,
-    ): R {
+    public inline fun <R> fold(onSuccess: (value: T) -> R, onFailure: (exception: Throwable) -> R): R {
         contract {
             callsInPlace(onSuccess, InvocationKind.AT_MOST_ONCE)
             callsInPlace(onFailure, InvocationKind.AT_MOST_ONCE)
