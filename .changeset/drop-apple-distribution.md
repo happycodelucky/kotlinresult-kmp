@@ -1,6 +1,6 @@
 ---
 title: Drop the XCFramework / Swift Package Manager distribution
-change: major
+change: minor
 description: KotlinResult now ships on Maven Central only. Swift keeps getting KotlinResult and its helpers through your KMP library's framework.
 ---
 
