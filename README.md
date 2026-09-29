@@ -1,13 +1,16 @@
 # KotlinResult
 
-![iOS 18+](https://img.shields.io/badge/iOS-18%2B-blue.svg?style=for-the-badge&logo=apple)
-![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue.svg?style=for-the-badge&logo=apple)
+![iOS · macOS via KMP](https://img.shields.io/badge/iOS%20%C2%B7%20macOS-via%20KMP-blue.svg?style=for-the-badge&logo=apple)
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white)
 ![JVM 21+](https://img.shields.io/badge/JVM-21%2B-orange.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Kotlin 2.4](https://img.shields.io/badge/Kotlin-2.4-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)
 
 `kotlin.Result` for Kotlin Multiplatform, usable from Swift.
+
+It's a building block for **KMP libraries**: Swift reaches it through your
+library's framework, not on its own — so it ships on Maven Central only, with no
+XCFramework or Swift package.
 
 `kotlin.Result` is a value class, and Kotlin/Native's Objective-C export erases
 it to an untyped `Any?`, so a KMP library can't return one to Swift. KotlinResult
@@ -78,6 +81,7 @@ val port = parsePort(input).getOrDefault(8080)
 
 ### Using it from Swift
 
+Through your library's framework (set up [below](#using-it-from-a-kmp-library-required-setup)),
 `get()` returns the value (name its type) or throws the Kotlin exception itself:
 
 ```swift
@@ -132,17 +136,8 @@ implementation(libs.kotlinresult)
 ```
 <!-- x-release-version-end -->
 
-### Swift (SPM)
-
-Add this repository as a package dependency, pinned to a release tag. The
-XCFramework ships as a GitHub Release asset (see
-[`.github/PUBLISHING.md`](.github/PUBLISHING.md)).
-
-<!-- x-release-version-start -->
-```swift
-.package(url: "https://github.com/happycodelucky/kotlinresult-kmp.git", from: "1.0.1")
-```
-<!-- x-release-version-end -->
+There is no Swift package: an iOS or macOS app gets `KotlinResult` from the KMP
+library that uses it, exported into that library's framework.
 
 ## Development
 
@@ -155,7 +150,7 @@ mise trust && mise install
 mise run check         # ktlint + detekt + every test target — the done gate
 mise run test:jvm      # fast inner loop
 mise run build:src     # assemble the library
-mise run open:macos    # build XCFramework + xcodegen + open Xcode (or open:ios / open:android)
+mise run test:swift    # link a consumer framework that exports it + run the Swift helpers
 mise tasks             # full task list
 ```
 

@@ -35,8 +35,7 @@ type (`NSString`, `KotlinInt`), and a wrong type is a runtime
 
 ## Distribution
 
-- **Maven Central** — per-target klibs (carrying the bundled Swift), the Android
-  AAR, the JVM jar.
-- **GitHub Releases** (KMMBridge) — `KotlinresultKit.xcframework` for pure-Swift
-  consumers, though most consumers get `KotlinResult` inside the framework of the
-  KMP library that exports it.
+Maven Central only — per-target klibs (the Apple ones carry the bundled Swift),
+the Android AAR, the JVM jar. `KotlinResult` is a building block for KMP
+libraries, so Swift gets it inside the framework of the library that exports it;
+there is no XCFramework or Swift package of its own.

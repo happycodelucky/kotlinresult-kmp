@@ -1,15 +1,11 @@
 name: Release
 
-# Two distribution channels ship from this workflow:
-#
-#   1. Maven Central (vanniktech plugin) — Android AAR, kotlinMultiplatform
-#      metadata, per-target klibs. For Gradle / KMP consumers.
-#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced KotlinresultKit.xcframework
-#      zip, attached to the vX.Y.Z release and referenced from the tagged
-#      Package.swift by URL + checksum. For pure-Swift SPM consumers; no
-#      Gradle build, no authentication. GitHub *Releases*, not GitHub
-#      *Packages* — Packages requires a PAT even to download from public
-#      repos, which is unusable for an open-source Swift package.
+# One distribution channel: Maven Central (vanniktech plugin) — Android AAR,
+# jvm jar, kotlinMultiplatform metadata, per-target klibs (the Apple ones carry
+# the bundled Swift). For Gradle / KMP consumers; Swift reaches this library
+# only through a consumer's framework, so there is no XCFramework or SPM
+# package (CLAUDE.md §8). Each release is then tagged vX.Y.Z and gets a GitHub
+# Release holding its changelog notes (no assets).
 #
 # --- How a release starts ----------------------------------------------------
 #
@@ -53,9 +49,8 @@ on:
         type: boolean
         default: true
 
-# `contents: write` covers everything the SPM side needs: KMMBridge creating
-# the GitHub Release + uploading the XCFramework zip asset, and pushing the
-# version tag. All of it happens only on a real (non-dry-run) release.
+# `contents: write` covers pushing the version tag and creating the GitHub
+# Release. Both happen only on a real (non-dry-run) release.
 #
 # `pages: write` + `id-token: write` are for the `docs` job, which calls the
 # reusable Docs workflow to deploy the site. A reusable workflow's jobs run
@@ -132,7 +127,7 @@ jobs:
               exit 1
             fi
             if [[ "$VERSION" != *-* ]]; then
-              # KMMBridge tags against, and the docs deploy from, main.
+              # Stable tags and the docs deploy come from main.
               if [[ "$GITHUB_REF_NAME" != "main" ]]; then
                 echo "::error::Stable releases run from main (got '$GITHUB_REF_NAME'). Pre-releases (X.Y.Z-suffix) can run from any branch."
                 exit 1
@@ -175,6 +170,8 @@ jobs:
     name: Publish ${{ needs.plan.outputs.version }}
     needs: plan
     if: needs.plan.outputs.release == 'true'
+    # macOS: the Apple klibs (and the Swift SKIE bundles into them) only build
+    # on a Mac.
     runs-on: macos-latest
 
     # The four MAVEN_CENTRAL_* secrets live on the `continuous-deployment`
@@ -207,10 +204,10 @@ jobs:
 
       # Fail before anything irreversible — and make a retry resume instead of
       # colliding with its own earlier progress. The steps run in order:
-      # Maven Central, then the GitHub Release (KMMBridge), then the tag.
+      # Maven Central, then the tag, then the GitHub Release.
       #
       #   GitHub Release exists     → already released; fail.
-      #   on Maven Central, no GH   → resume: skip Maven, finish the SPM half.
+      #   on Maven Central, no GH   → resume: skip Maven, tag + release.
       #   on neither                → publish.
       #
       # Checks every module that ships under com.happycodelucky.kotlinresult
@@ -248,7 +245,7 @@ jobs:
               echo "::error::$RELEASE_VERSION is already on Maven Central — there's nothing to stage."
               exit 1
             fi
-            echo "::warning::$RELEASE_VERSION is already on Maven Central — resuming: skipping Maven, publishing the SPM release."
+            echo "::warning::$RELEASE_VERSION is already on Maven Central — resuming: skipping Maven, tagging and creating the GitHub Release."
             echo "MAVEN_PUBLISHED=true" >> "$GITHUB_ENV"
           else
             echo "::error::Only some modules of $RELEASE_VERSION are on Maven Central. Check https://central.sonatype.com/publishing/deployments and finish or drop the deployment by hand."
@@ -323,80 +320,12 @@ jobs:
           ./gradlew publishAndReleaseToMavenCentral \
             -Pversion="$RELEASE_VERSION" --no-daemon
 
-      # --- SPM distribution (KMMBridge) ----------------------------------
-      #
-      # Runs only on a real publish — a dry run uploads nothing, so there is
-      # no asset for Package.swift to reference. `kmmBridgePublish` does the
-      # heavy lifting in one Gradle invocation:
-      #
-      #   1. Builds the SKIE-enhanced release KotlinresultKit.xcframework (all
-      #      three slices: iosArm64, iosSimulatorArm64, macosArm64).
-      #   2. Zips it and creates the GitHub Release tagged `vX.Y.Z` (the tag
-      #      lands on the default-branch HEAD — moved onto the release commit
-      #      two steps later).
-      #   3. Uploads `KotlinresultKit.xcframework.zip` as a release asset.
-      #   4. Regenerates the root Package.swift with the asset URL + sha256
-      #      checksum.
-      #
-      # Two non-obvious requirements (kmmbridge 1.2.1):
-      #   * `-PENABLE_PUBLISHING=true` — KMMBridge only registers the
-      #     `kmmBridgePublish` task when this property is set. Passed on the
-      #     CI command line only, so local builds can never accidentally
-      #     publish.
-      #   * `GITHUB_REPO` / `GITHUB_PUBLISH_TOKEN` — KMMBridge reads these
-      #     as *Gradle properties* (not env vars), hence the
-      #     ORG_GRADLE_PROJECT_ prefix, which Gradle maps onto project
-      #     properties of the un-prefixed name.
-      - name: Publish XCFramework to GitHub Release (KMMBridge)
-        if: env.DRY_RUN != 'true'
-        env:
-          ORG_GRADLE_PROJECT_GITHUB_REPO: ${{ github.repository }}
-          ORG_GRADLE_PROJECT_GITHUB_PUBLISH_TOKEN: ${{ github.token }}
-        run: |
-          ./gradlew :kotlinresult:kmmBridgePublish \
-            -Pversion="$RELEASE_VERSION" \
-            -PENABLE_PUBLISHING=true \
-            --no-daemon
-
-      # KMMBridge writes the GitHub *API* asset URL into Package.swift
-      # (https://api.github.com/repos/…/releases/assets/<id>.zip). SPM can
-      # consume that — it sends `Accept: application/octet-stream` — but the
-      # URL serves JSON to plain HTTP clients and every download burns the
-      # anonymous API quota (60 requests/hour/IP), which bites shared CI
-      # egress IPs. The public browser URL serves the same bytes (same
-      # checksum) with no quota and no special headers, and is fully
-      # deterministic: tag + fixed asset name. Rewrite, then prove the
-      # manifest still parses (`dump-package` is offline — it never fetches
-      # the binary).
-      - name: Point Package.swift at the public release-asset URL
-        if: env.DRY_RUN != 'true'
-        run: |
-          set -euo pipefail
-          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/KotlinresultKit.xcframework.zip"
-
-          sed -i '' -E "s|^let remoteKotlinUrl = .*$|let remoteKotlinUrl = \"${ASSET_URL}\"|" Package.swift
-
-          # Belt-and-braces: if KMMBridge ever renames the variable, sed
-          # silently matches nothing — catch that here instead of shipping a
-          # tag whose Package.swift still points at the API URL.
-          grep -qF "$ASSET_URL" Package.swift
-          swift package dump-package > /dev/null
-          echo "Package.swift now references $ASSET_URL"
-
-      # SPM consumers resolve the manifest FROM THE TAG, then download the
-      # binary it references — so the tag must hold this Package.swift. The
-      # commit that carries it lives only on the tag, never on main: main is
-      # branch-protected (a bot push is rejected), and doesn't need it — main
-      # keeps the local-dev Package.swift the sample apps build against, and
-      # already holds the release's version bump from the release PR. The
-      # release commit is exactly the released tree plus the remote-binary
-      # Package.swift. KMMBridge created the tag on the default-branch HEAD;
-      # force-move it here (Touchlab's own flow does the same).
-      #
-      # Notes: the changelog section the release PR wrote — or, for a
-      # pre-release, the changesets pending on its branch — with GitHub's
-      # generated notes as the fallback. KMMBridge creates the release bare.
-      - name: Tag the release commit, finalize the release
+      # The tag marks the commit this run released (the release PR's merge, or
+      # the dispatched branch's HEAD for a pre-release). A tag left by an
+      # earlier run that stopped part-way is moved here. Notes: the changelog
+      # section the release PR wrote — or, for a pre-release, the changesets
+      # pending on its branch — with GitHub's generated notes as the fallback.
+      - name: Tag and create the GitHub Release
         if: env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -405,10 +334,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
-          git switch --detach
-          git add Package.swift
-          git commit -m "Release $RELEASE_TAG" \
-            -m "Package.swift points at the $RELEASE_TAG XCFramework release asset."
           git tag -fa "$RELEASE_TAG" -m "Release $RELEASE_TAG"
           git push --force origin "refs/tags/$RELEASE_TAG"
 
@@ -417,10 +342,10 @@ jobs:
               -f tag_name="$RELEASE_TAG" --jq .body > "$RUNNER_TEMP/notes.md"
           fi
           if [[ "$PRERELEASE" == "true" ]]; then
-            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" \
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/notes.md" --prerelease --latest=false
           else
-            gh release edit "$RELEASE_TAG" --title "$RELEASE_TAG" \
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG" \
               --notes-file "$RUNNER_TEMP/notes.md" --latest
           fi
 
@@ -436,7 +361,6 @@ jobs:
               echo ""
               echo "- Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.kotlinresult/kotlinresult/$RELEASE_VERSION"
               echo "- GitHub Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/$RELEASE_TAG"
-              echo "- SPM: https://github.com/${GITHUB_REPOSITORY}.git pinned to $RELEASE_TAG"
               echo ""
               echo "Maven Central indexing can take ~30 min to reach https://repo1.maven.org/maven2/."
             fi

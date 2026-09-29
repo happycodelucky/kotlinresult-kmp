@@ -160,6 +160,25 @@ reason = "Template placeholder API dumps; this repo commits its own."
 path = "src-testing/src/*"
 reason = "Template placeholder test helpers; :kotlinresult-testing carries assertSuccess/assertFailure."
 
+# No direct Apple distribution (LESSONS D-010): template KMMBridge / XCFramework /
+# SPM changes — also inside release.yml, ci.yml, mise.toml, PUBLISHING.md — are
+# skipped when they arrive; SKIE stays only for Swift bundling in :kotlinresult.
+[[ignore]]
+path = "Package.swift"
+reason = "No SPM package: Maven Central only (LESSONS D-010)."
+
+[[ignore]]
+path = "apps/ios/*"
+reason = "No XCFramework to consume; apps/apple-consumer checks the Swift instead (LESSONS D-010)."
+
+[[ignore]]
+path = "apps/macos/*"
+reason = "No XCFramework to consume; apps/apple-consumer checks the Swift instead (LESSONS D-010)."
+
+[[ignore]]
+path = "apps/shared/*"
+reason = "SwiftUI shared by the removed iOS/macOS sample apps (LESSONS D-010)."
+
 # Per-change decisions (append one per template change triaged; `deferred` resurfaces in
 # `status`). status: adopted | adapted | skipped | deferred.
 # [[decision]]

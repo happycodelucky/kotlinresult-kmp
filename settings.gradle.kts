@@ -49,13 +49,14 @@ include(":kotlinresult")
 include(":kotlinresult-testing")
 
 // --- Sample apps (CLAUDE.md §9) -----------------------------------------------
-// The Android sample is a normal Gradle subproject because Compose + AGP play
-// best inside the same Gradle build that produces the AAR. The iOS and macOS
-// samples are standalone Xcode projects under /apps/ios and /apps/macos; they
-// consume the :kotlinresult module via SPM, NOT Gradle, and so are deliberately not
-// included here. A JVM CLI sample lives under /apps/jvm-cli.
+// Every sample is a Gradle subproject depending on :kotlinresult directly:
+// Android (Compose) under /apps/android, a JVM CLI under /apps/jvm-cli, and
+// /apps/apple-consumer — a stand-in KMP library that exports :kotlinresult into
+// its Apple framework, the only way Swift reaches it (CLAUDE.md §7, §8).
 include(":androidApp")
 project(":androidApp").projectDir = file("apps/android")
 
 include(":jvm-cli")
 project(":jvm-cli").projectDir = file("apps/jvm-cli")
+include(":apple-consumer")
+project(":apple-consumer").projectDir = file("apps/apple-consumer")

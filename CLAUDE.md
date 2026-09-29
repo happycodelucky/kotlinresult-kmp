@@ -1,6 +1,7 @@
 # CLAUDE.md — KotlinResult Project Guide
 
-Kotlin Multiplatform library for iOS, macOS, Android, and JVM. This file is the
+Kotlin Multiplatform library for iOS, macOS, Android, and JVM — consumed through
+KMP only (Maven Central; no XCFramework or SPM, §8). This file is the
 contract a contributor (human or agent) reads first. Start here, then
 `gradle/libs.versions.toml`, then `.claude/lessons/LESSONS.md`.
 
@@ -44,7 +45,7 @@ targets — never inherited from the build JDK, see LESSONS N-003); build JDK 21
 (not 25 until detekt 2.x is stable — N-001). Every other version — Kotlin, AGP,
 SKIE, Gradle — is whatever the catalog says, so read it there rather than
 trusting a number quoted in prose.
-mise pins the non-Gradle tools (JDK, gradle, xcodegen, gh) and
+mise pins the non-Gradle tools (JDK, gradle, gh) and
 `gradle/wrapper/gradle-wrapper.properties` pins the Gradle distribution; all
 three must agree on the Kotlin/AGP/JDK/Gradle story.
 
@@ -60,11 +61,11 @@ three must agree on the Kotlin/AGP/JDK/Gradle story.
   Foundation); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll
   source-set wiring — any manual `dependsOn()` edge disables the template.
 - Module shape lives in the `kotlinresult.kmp-library` convention plugin
-  (`gradle/plugins/`). Framework base name and namespace are DERIVED from the
-  module name (`src` → framework `SrcKit`, namespace `com.happycodelucky.kotlinresult`).
-  The framework / Swift module is always `<Name>Kit`, so it never shares a name
-  with a public type (SKIE would rename the type in Swift — LESSONS D-002).
-  Adding a module = apply `kotlinresult.kmp-library` + `kotlinresult.publish`.
+  (`gradle/plugins/`). The Android namespace is DERIVED from the module name
+  (`kotlinresult` → `com.happycodelucky.kotlinresult`). The Apple targets build
+  klibs only — no framework binaries: consumers link the klibs into their own
+  frameworks (§7). Adding a module = apply `kotlinresult.kmp-library` +
+  `kotlinresult.publish`.
 - Keep the `expect`/`actual` seam tiny; push logic into `commonMain`.
 
 ## 5. Libraries — Kotlin-first
@@ -122,9 +123,10 @@ first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
 
 ## 7. Swift interop
 
-SKIE mandatory (convention plugin configures it; `produceDistributableFramework()`
-in `:kotlinresult`). `Flow`/`StateFlow` → `AsyncSequence`. Sealed types → exhaustive Swift
-enums. **`@Throws` on an `expect` must be replicated verbatim on every `actual`**,
+Swift reaches this library only through a KMP consumer's framework, built with
+SKIE (`Flow`/`StateFlow` → `AsyncSequence`, sealed types → exhaustive Swift
+enums). SKIE is applied here ONLY in `:kotlinresult`, to bundle its Swift into
+the Apple klibs (below); nothing here builds a framework. **`@Throws` on an `expect` must be replicated verbatim on every `actual`**,
 and a `@Throws` on a `suspend fun` must list `CancellationException`. Never
 `kotlin.Result<T>` at the boundary — that is what this library's `Result` is for.
 
@@ -132,13 +134,14 @@ and a `@Throws` on a `suspend fun` must list `CancellationException`. Never
 type is always written `kotlin.Result`); ObjC/Swift `KotlinResult` via
 `@ObjCName(name = "KotlinResult", swiftName = "KotlinResult")`, like `KotlinInt`.
 
-**Swift bundling is ON for `:kotlinresult`** (the convention plugin defaults it
-off). SKIE compiles the bundled Swift of *every* linked klib into each framework
-(no per-dependency opt-out — `UnpackSwiftSourcesTask`), and
-`KotlinResult+Swift.swift` compiles only where `KotlinResult` keeps its plain
-name. So **every framework that links `:kotlinresult` must `export` it** — consumer
-libraries (README), and `:kotlinresult-testing` here. Missing export ⇒
-`cannot find type 'KotlinResult' in scope` at link (LESSONS D-005).
+**Swift bundling is ON for `:kotlinresult`**: SKIE copies
+`src/appleMain/swift/` into each Apple klib, and the consumer's SKIE compiles the
+bundled Swift of *every* linked klib into its framework (no per-dependency
+opt-out — `UnpackSwiftSourcesTask`). `KotlinResult+Swift.swift` compiles only
+where `KotlinResult` keeps its plain name, so **every framework that links
+`:kotlinresult` must `export` it** (README; `apps/apple-consumer` here). Missing
+export ⇒ `cannot find type 'KotlinResult' in scope` at link (LESSONS D-005).
+Dropping SKIE here would silently drop the helpers for every consumer.
 
 **Android consumers** compile against at least `android-min-compile-sdk` (the
 AAR's `minCompileSdk`, LESSONS B-001) — not our `compileSdk`.
@@ -157,9 +160,11 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 
 ## 8. Distribution
 
-Two channels, non-overlapping:
+One channel:
 - **Maven Central** (`kotlinresult.publish` / vanniktech): Android AAR + jvm jar +
-  KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
+  KMP metadata + klibs (the Apple ones carry the bundled Swift). For Gradle/KMP
+  consumers — this is a building block for KMP libraries, never used by an app
+  directly, so there is no XCFramework, KMMBridge or SPM package (LESSONS D-010). `mise run publish:local`
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
 - **llms.txt for AI tools**: every published jar and the AAR carry `llms.txt` +
@@ -167,13 +172,11 @@ Two channels, non-overlapping:
   `META-INF/<groupId>/<artifactId>/`, generated from Dokka by any publishing
   build (LESSONS D-009). `mise run llms:generate` previews them; `mise run
   llms:check` verifies a local publish. The docs site serves its own pair.
-- **GitHub Releases** (KMMBridge in `kotlinresult/build.gradle.kts`): the SKIE-enhanced
-  `KotlinresultKit.xcframework` for SPM consumers. Don't redeclare `XCFramework("KotlinresultKit")` —
-  KMMBridge auto-creates it. The released `Package.swift` lives only on each
-  `vX.Y.Z` tag; `main` keeps the local-dev form.
+- **GitHub Releases**: each release is tagged `vX.Y.Z` with a Release holding its
+  changelog notes — no assets.
 
 **Releases are changeset-driven** (`.changeset/README.md`,
-`.github/PUBLISHING.md`; LESSONS D-001, N-009, N-010). Every PR that reaches consumers adds a changeset
+`.github/PUBLISHING.md`; LESSONS D-001, N-009). Every PR that reaches consumers adds a changeset
 (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then
 the full note in place of its Unfilled callout); the Changeset PR check enforces
 it for any PR that changes a file in release scope — `include`/`exclude` globs in
@@ -213,9 +216,11 @@ Fill in as your library's platform needs become concrete. Common gotchas:
 
 Every `Result` operation has a `commonTest` case checking it against the
 `kotlin.Result` operation it mirrors (`ResultTest`). The Swift half isn't covered
-by Gradle tests: after changing it or the exported surface, check the built
-framework's `.swiftinterface` and run a small Swift program linked against the
-macOS debug framework (construction, `get()`, `result(as:)`, type mismatch). The done gate is the full
+by Gradle tests: `mise run test:swift` links `apps/apple-consumer`'s framework
+(which exports `:kotlinresult`, so SKIE compiles the bundled Swift) and runs
+`swift/main.swift` against it (construction, `get()`, `result(as:)`, type
+mismatch) — run it after changing the Swift or the exported surface; CI's Apple
+leg does. The done gate is the full
 `:kotlinresult:check :kotlinresult-testing:check` (`mise run check`) — which compiles *test*
 sources for every target and runs detekt. A JVM-only run hides native-test-compile
 and detekt failures.
@@ -249,6 +254,7 @@ and detekt failures.
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` never builds the sample apps — `mise run build:samples` does (CI's
    fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-004).
+   Touched the Swift or the public API? Also `mise run test:swift` (§10).
    `check` also runs the API/ABI check (§8). If a build feels slow, `mise run
    build:profile` writes a local timing report; `build/reports/problems/` lists
    deprecations and configuration-cache problems.

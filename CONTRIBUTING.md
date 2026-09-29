@@ -8,11 +8,12 @@ contract — every action is a `mise run <task>`.
 ```bash
 brew install mise
 mise trust
-mise install            # provisions JDK, Gradle, xcodegen, gh
+mise install            # provisions JDK, Gradle, gh
 cp local.properties.example local.properties   # point sdk.dir at your Android SDK
 ```
 
-Xcode is not managed by mise — install a recent Xcode that SKIE supports.
+Xcode is not managed by mise — install a recent Xcode that SKIE supports (the
+Apple targets and `mise run test:swift` need it).
 
 ## Workflow
 
@@ -49,7 +50,7 @@ mise run format
   questions, How it was verified) are required. Agent-authored PRs open as
   drafts and say so under *AI assistance*; marking one ready for review means a
   human has reviewed it (CLAUDE.md §11).
-- CI runs the same `mise run check` + `mise run build:xcframework`. Green CI is
+- CI runs the same `mise run check` + `mise run test:swift`. Green CI is
   required to merge.
 - The **Changeset** check fails a PR that changes a file in release scope
   (`.changeset/config.toml` — the published modules and build logic, not docs,
@@ -64,4 +65,4 @@ Releases come from the changesets. Merges to `main` keep a **Release vX.Y.Z**
 PR open with the computed version and changelog; merging it publishes the
 release. Pre-releases and retries are manual runs of the Release workflow. See
 [`.github/PUBLISHING.md`](.github/PUBLISHING.md). Don't hand-edit `version=` in
-`gradle.properties` or `Package.swift` — both are generated.
+`gradle.properties` — the release PR sets it.

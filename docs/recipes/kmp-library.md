@@ -42,6 +42,10 @@ Also:
   `OtherKit.KotlinResult` are distinct), as with every Kotlin type exported to
   Swift. The helpers work on each.
 
+This repository's `apps/apple-consumer` module is a working example: it exports
+`:kotlinresult` into its framework, and `mise run test:swift` calls the helpers
+from Swift.
+
 ## Swift fakes
 
 Swift can build a `KotlinResult` to return from a fake of a Kotlin interface:

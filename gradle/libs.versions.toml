@@ -6,7 +6,7 @@
 # The Kotlin pin is bounded above by SKIE's supported range — do not bump Kotlin
 # past what SKIE supports.
 #
-# mise.toml pins the non-Gradle tools (JDK, gradle, xcodegen, gh); this catalog
+# mise.toml pins the non-Gradle tools (JDK, gradle, gh); this catalog
 # owns everything in the Gradle build graph. The two must agree on the Kotlin /
 # AGP / JDK story (see mise.toml header).
 #
@@ -47,15 +47,11 @@ kotlin = "2.4.10"
 agp = "9.4.1"
 # Latest release; 0.10.14 added Kotlin 2.4.10 support (changelog 2026-07-27).
 skie = "0.10.14"
-# XCFramework → GitHub Release asset → SPM (CLAUDE.md §8).
-kmmbridge = "1.2.1"
 # Kotlin API doc generator; Dokka v2 task layout.
 dokka = "2.2.0"
 # vanniktech's gradle-maven-publish-plugin — publishes signed artifacts to the
 # Sonatype Central Portal (central.sonatype.com). Pins the JDK17 / Gradle 9 /
 # AGP 9 floor and supports com.android.kotlin.multiplatform.library publications.
-# Coexists with KMMBridge — each plugin owns its own repository and
-# publish-umbrella task, so there's no cross-contamination.
 maven-publish = "0.37.0"
 
 # --- Dependency management (mise dependencies:outdated / dependencies:update) -
@@ -96,10 +92,6 @@ android-min-sdk = "30"
 # A consumer contract — independent of the JDK that runs the build (mise.toml).
 jvm-target = "21"
 
-# --- Apple deployment targets ----------------------------------------------
-ios-deployment-target = "18.0"
-macos-deployment-target = "15.0"
-
 # --- kotlinx ----------------------------------------------------------------
 kotlinx-coroutines = "1.11.0"
 kotlinx-atomicfu = "0.33.0"
@@ -109,7 +101,7 @@ kotlinx-atomicfu = "0.33.0"
 # kotlinresult.kmp-library convention plugin (CLAUDE.md §5).
 kermit = "2.2.0"
 
-# --- Sample-app deps (apps/android only — iOS/macOS consume via SPM) ---------
+# --- Sample-app deps (apps/android only) -------------------------------------
 androidx-activity-compose = "1.13.0"
 androidx-lifecycle-runtime-compose = "2.11.0"
 androidx-compose-bom = "2026.09.00"
@@ -184,12 +176,6 @@ skie = { id = "co.touchlab.skie", version.ref = "skie" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
-# kmmbridge-github — applied in kotlinresult/build.gradle.kts. Publishes the
-# SKIE-enhanced XCFramework zip as a GitHub *Release* asset (public,
-# unauthenticated download) and regenerates the root Package.swift to reference
-# it by URL + checksum. The .github variant is a superset of the core plugin in
-# 1.2.x — applying both produces a duplicate-extension error.
-kmmbridge-github = { id = "co.touchlab.kmmbridge.github", version.ref = "kmmbridge" }
 # Vanniktech Maven Publish — Maven Central Portal upload + GPG signing.
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
 # Dependency-update tooling (mise dependencies:outdated / dependencies:update).
