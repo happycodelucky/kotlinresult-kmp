@@ -24,8 +24,7 @@
 #   (real)   : the full release, after a typed confirmation:
 #              1. publishAndReleaseToMavenCentral  (IRREVERSIBLE);
 #              2. tag HEAD vX.Y.Z and push the tag;
-#              3. `gh release create` with the changelog's notes (no assets —
-#                 Maven Central is the only distribution channel).
+#              3. `gh release create` with the changelog's notes.
 #
 # Required for a REAL release: a clean git tree, `gh` authenticated, and the
 # Maven Central credentials exported as the ORG_GRADLE_PROJECT_* env vars

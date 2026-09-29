@@ -99,7 +99,7 @@ jobs:
     # has no Pages site and the workflow token can't create one (org/repo
     # Actions permissions aren't the template's to set). A rendered project has
     # a different `github.repository`, so the deploy runs there (once that repo
-    # enables Pages — see README).
+    # enables Pages — see .github/PUBLISHING.md).
     if: >-
       inputs.deploy &&
       github.repository != 'happycodelucky/kmp-template'

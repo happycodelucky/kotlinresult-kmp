@@ -4,9 +4,8 @@ title: Installation
 
 # Installation
 
-KotlinResult is published to Maven Central for Gradle / KMP consumers. It's a
-building block for KMP libraries, so there is no XCFramework or Swift package:
-Swift reaches it through your library's framework (see
+KotlinResult is published to Maven Central for Gradle / KMP consumers. Swift
+reaches it through your library's framework (see
 [Use it from a KMP library](recipes/kmp-library.md) for the required `export`).
 
 ## Gradle

@@ -1,13 +1,11 @@
 # Publishing
 
-KotlinResult ships through one channel, **Maven Central**, from
-`.github/workflows/release.yml`: the Android AAR, the jvm jar,
-`kotlinMultiplatform` metadata and per-target klibs, for Gradle / KMP consumers.
-It's a building block for KMP libraries, so there is no XCFramework or Swift
-package: Swift gets it inside the framework of the library that exports it, and
-the Apple klibs carry the SKIE-bundled Swift helpers for that framework to
-compile. Each release is also tagged `vX.Y.Z` with a GitHub Release holding its
-notes (no assets).
+KotlinResult ships to **Maven Central** from `.github/workflows/release.yml`:
+the Android AAR, the jvm jar, `kotlinMultiplatform` metadata and per-target
+klibs, for Gradle / KMP consumers. Swift gets it inside the framework of the
+library that exports it; the Apple klibs carry the SKIE-bundled Swift helpers
+for that framework to compile. Each release is also tagged `vX.Y.Z` with a
+GitHub Release holding its notes.
 
 ## Maven Central
 
@@ -104,6 +102,14 @@ workflows, so CI wouldn't run on the release PR by itself. Pick one:
   token: a PR opened as you can't be approved by you.)
 
 If `main` requires status checks, add **Changeset** alongside CI's jobs.
+
+### One-time setup for the docs site
+
+The Docs workflow deploys `docs/` to GitHub Pages after each successful stable
+release (pushes to `main` only build it). It enables Pages on its first run
+(`configure-pages` with `enablement: true`), which needs **Settings → Actions →
+General → Workflow permissions → Read and write**. If that's blocked, enable
+Pages by hand: **Settings → Pages → Source: GitHub Actions**.
 
 ## Releasing by hand (`mise run publish:maven`)
 

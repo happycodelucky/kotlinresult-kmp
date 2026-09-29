@@ -9,8 +9,8 @@
  * comes from `kotlinresult.publish`. This script keeps only what is unique to
  * the module: SKIE's Swift bundling and the POM name/description.
  *
- * Maven Central is the only channel (CLAUDE.md §8): KMP consumers link the
- * klibs into their own Apple frameworks. No XCFramework, no SPM.
+ * Published to Maven Central (CLAUDE.md §8): KMP consumers link the klibs into
+ * their own Apple frameworks.
  */
 
 plugins {

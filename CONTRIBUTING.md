@@ -28,6 +28,16 @@ Apple targets and `mise run test:swift` need it).
    [`.changeset/README.md`](.changeset/README.md)). Its `change` level decides
    the version; the PR's *Type of change* just restates it.
 
+## Common tasks
+
+```bash
+mise run test:jvm      # fast inner loop
+mise run check         # ktlint + detekt + every test target — the done gate
+mise run test:swift    # compile + run the Swift helpers through a consumer framework
+mise run docs:serve    # preview the docs site
+mise tasks             # everything else
+```
+
 ## The done gate
 
 ```bash

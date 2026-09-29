@@ -1,7 +1,7 @@
 # CLAUDE.md — KotlinResult Project Guide
 
-Kotlin Multiplatform library for iOS, macOS, Android, and JVM — consumed through
-KMP only (Maven Central; no XCFramework or SPM, §8). This file is the
+Kotlin Multiplatform library for iOS, macOS, Android, and JVM, consumed through
+KMP (§8). This file is the
 contract a contributor (human or agent) reads first. Start here, then
 `gradle/libs.versions.toml`, then `.claude/lessons/LESSONS.md`.
 
@@ -160,11 +160,9 @@ and types (`iOS`, `macOS`) except JetBrains spellings (`iosArm64`, `withMacos()`
 
 ## 8. Distribution
 
-One channel:
 - **Maven Central** (`kotlinresult.publish` / vanniktech): Android AAR + jvm jar +
   KMP metadata + klibs (the Apple ones carry the bundled Swift). For Gradle/KMP
-  consumers — this is a building block for KMP libraries, never used by an app
-  directly, so there is no XCFramework, KMMBridge or SPM package (LESSONS D-010). `mise run publish:local`
+  consumers — the only channel (LESSONS D-010). `mise run publish:local`
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
 - **llms.txt for AI tools**: every published jar and the AAR carry `llms.txt` +
@@ -173,7 +171,7 @@ One channel:
   build (LESSONS D-009). `mise run llms:generate` previews them; `mise run
   llms:check` verifies a local publish. The docs site serves its own pair.
 - **GitHub Releases**: each release is tagged `vX.Y.Z` with a Release holding its
-  changelog notes — no assets.
+  changelog notes.
 
 **Releases are changeset-driven** (`.changeset/README.md`,
 `.github/PUBLISHING.md`; LESSONS D-001, N-009). Every PR that reaches consumers adds a changeset
