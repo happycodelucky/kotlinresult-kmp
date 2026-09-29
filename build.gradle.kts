@@ -229,8 +229,8 @@ versionCatalogUpdate {
     // instead of alphabetizing them.
     sortByKey.set(false)
     keep {
-        // Keys no library/plugin references: android-compile-sdk, android-min-sdk
-        // and jvm-target (read via the string-based findVersion("…") API in the
+        // Keys no library/plugin references: android-compile-sdk,
+        // android-min-compile-sdk, android-min-sdk and jvm-target (read via the string-based findVersion("…") API in the
         // convention plugin, invisible to VCU's usage scan), and the Apple
         // deployment targets (documentation for the floors spelled out in
         // kotlinresult/build.gradle.kts and Package.swift). Without this, VCU prunes them.
@@ -238,7 +238,7 @@ versionCatalogUpdate {
     }
     pin {
         // Kotlin is bounded above by SKIE (CLAUDE.md §3): a Kotlin bump is a
-        // manual, SKIE-paired change — the same policy renovate.json5 encodes.
+        // manual, SKIE-paired change.
         // Pinning the `kotlin` ref also holds the compose-compiler plugin, which
         // versions in lockstep with it. To bump Kotlin, edit the catalog by hand
         // once SKIE's changelog lists support; this task only reports it.

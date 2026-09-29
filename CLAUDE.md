@@ -40,8 +40,8 @@ Latest stable only — no EAP/RC/Beta on `main`. K2 only. Single source of truth
 stable** (training data goes stale). The Kotlin pin is bounded above by SKIE — do
 not bump Kotlin past SKIE's supported range; bump SKIE first. JVM bytecode
 target 21 (the catalog's `jvm-target`, set explicitly on the android + jvm
-targets — never inherited from the build JDK, see LESSONS N-005); build JDK 21
-(not 25 until detekt 2.x is stable — N-002). Every other version — Kotlin, AGP,
+targets — never inherited from the build JDK, see LESSONS N-003); build JDK 21
+(not 25 until detekt 2.x is stable — N-001). Every other version — Kotlin, AGP,
 SKIE, Gradle — is whatever the catalog says, so read it there rather than
 trusting a number quoted in prose.
 mise pins the non-Gradle tools (JDK, gradle, xcodegen, gh) and
@@ -110,7 +110,7 @@ first. When nothing suitable exists, keep the `expect`/`actual` seam tiny (§4).
   `val state: StateFlow<S>` + `field = MutableStateFlow(initial)` on the next
   line; inside the class `state.value = …` smart-casts to the mutable type.
   Swift sees only the read-only `StateFlow` (SKIE: `SkieKotlinStateFlow`); the
-  mutable field never reaches the public API or its dump (LESSONS N-007).
+  mutable field never reaches the public API or its dump (LESSONS N-005).
 - Shared mutable state across suspend boundaries → `kotlinx.coroutines.sync.Mutex`.
   Non-suspending critical sections → `kotlinx.atomicfu.locks.synchronized`. Never
   `kotlin.synchronized`, `@Synchronized`, `java.util.concurrent.locks.*`,
@@ -138,7 +138,10 @@ off). SKIE compiles the bundled Swift of *every* linked klib into each framework
 `KotlinResult+Swift.swift` compiles only where `KotlinResult` keeps its plain
 name. So **every framework that links `:kotlinresult` must `export` it** — consumer
 libraries (README), and `:kotlinresult-testing` here. Missing export ⇒
-`cannot find type 'KotlinResult' in scope` at link.
+`cannot find type 'KotlinResult' in scope` at link (LESSONS D-005).
+
+**Android consumers** compile against at least `android-min-compile-sdk` (the
+AAR's `minCompileSdk`, LESSONS B-001) — not our `compileSdk`.
 
 **No extensions on the generic class in Swift.** Swift rejects any non-`@objc`
 member in an extension of a generic ObjC class ("cannot access the class's generic
@@ -159,16 +162,22 @@ Two channels, non-overlapping:
   KMP metadata + klibs. For Gradle/KMP consumers. `mise run publish:local`
   installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` (never the released version,
   which would shadow Central's).
+- **llms.txt for AI tools**: every published jar and the AAR carry `llms.txt` +
+  `llms-full.txt` (the module's public API with KDoc) under
+  `META-INF/<groupId>/<artifactId>/`, generated from Dokka by any publishing
+  build (LESSONS D-009). `mise run llms:generate` previews them; `mise run
+  llms:check` verifies a local publish. The docs site serves its own pair.
 - **GitHub Releases** (KMMBridge in `kotlinresult/build.gradle.kts`): the SKIE-enhanced
   `KotlinresultKit.xcframework` for SPM consumers. Don't redeclare `XCFramework("KotlinresultKit")` —
   KMMBridge auto-creates it. The released `Package.swift` lives only on each
   `vX.Y.Z` tag; `main` keeps the local-dev form.
 
 **Releases are changeset-driven** (`.changeset/README.md`,
-`.github/PUBLISHING.md`; LESSONS D-001, N-013, N-014). Every PR that reaches consumers adds a changeset
+`.github/PUBLISHING.md`; LESSONS D-001, N-009, N-010). Every PR that reaches consumers adds a changeset
 (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then
 the full note in place of its Unfilled callout); the Changeset PR check enforces
-it (label `no-changeset` to opt out). A changeset's `change` is the source of
+it for any PR that changes a file in release scope — `include`/`exclude` globs in
+`.changeset/config.toml` (label `no-changeset` to opt out). A changeset's `change` is the source of
 truth for the version — the author's call, which neither the PR nor tooling
 overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it
 bumps `version=` in `gradle.properties` (the single source of the version),
@@ -233,25 +242,26 @@ and detekt failures.
    restates it. The usual reading — removed/renamed public API is `major` (even
    while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a
    different level is the author's call (say why in the body). Docs/CI/test-only
-   PRs get the `no-changeset` label.
+   PRs are out of release scope and need none (`mise run changeset:scope`);
+   label an in-scope PR that still reaches no consumer `no-changeset`.
 8. Done when `mise run check` passes AND `:kotlinresult:compileKotlinMacosArm64` /
    `compileKotlinIosSimulatorArm64` / `compileAndroidMain` build clean (common-code
    bugs often only surface on Native — the JVM compile is not a sufficient gate).
    `check` never builds the sample apps — `mise run build:samples` does (CI's
-   fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-006).
+   fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS N-004).
    `check` also runs the API/ABI check (§8). If a build feels slow, `mise run
    build:profile` writes a local timing report; `build/reports/problems/` lists
    deprecations and configuration-cache problems.
 9. Learned something non-obvious? Add it to `.claude/lessons/LESSONS.md` (terse).
 10. Opening a PR or filing an issue? GitHub applies the templates only in its web
     UI — `gh … create --body` skips them — so build the body from them yourself
-    and pass it with `--body-file` (LESSONS N-011):
+    and pass it with `--body-file` (LESSONS N-007):
     - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each
       `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may
       remain), prune each choice list to the lines that apply, and tick a
       done-gate box only for what you actually ran or checked. Keep "AI-authored"
       under AI assistance, name the tool + model, and open with `--draft` — a
-      human marking it ready is the review sign-off (LESSONS N-012).
+      human marking it ready is the review sign-off (LESSONS N-008).
     - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each
       field's `label` as a `### ` heading in form order, with `_No response_`
       under a skipped optional field — the exact shape the web form produces.

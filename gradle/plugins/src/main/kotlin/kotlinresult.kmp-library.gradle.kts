@@ -102,15 +102,15 @@ kotlin {
 
         withHostTestBuilder { /* enables the androidHostTest source set */ }
 
-        // What consumers must compile against, declared rather than inherited.
-        // Left unset, AGP stamps the AAR's `minCompileSdk` with our compileSdk —
-        // 37, raised only for the Compose sample (LESSONS N-006) — so every
-        // consumer would be forced to compileSdk 37 although the library uses no
-        // Android API at all. Pinned to minSdk: nothing here needs newer.
+        // What CONSUMERS must compile against, declared rather than inherited
+        // (LESSONS B-001). Left unset, AGP stamps the AAR's `minCompileSdk` with
+        // our compileSdk — 37, raised only for the Compose sample (N-004) — and
+        // every consumer's `check<Variant>AarMetadata` then demands compileSdk 37.
+        // The catalog's `android-min-compile-sdk` is the deliberate floor instead.
         aarMetadata {
             minCompileSdk =
                 libs
-                    .findVersion("android-min-sdk")
+                    .findVersion("android-min-compile-sdk")
                     .get()
                     .requiredVersion
                     .toInt()
@@ -172,13 +172,18 @@ skie {
         // Disable opt-in analytics; revisit if useful.
         disableUpload.set(true)
     }
-    // Prevent SKIE from copying bundled Swift sources into the klib. A module
-    // may ship hand-written Swift sweeteners whose `extension` is only valid
-    // inside the module where the type keeps its short swift_name; if bundled
-    // into the klib, SKIE unpacks and recompiles them in downstream modules
-    // where the type is module-prefixed, causing a compile error. With bundling
-    // disabled, SKIE still compiles the Swift sources into each framework binary
-    // via its own compile task.
+    // Swift bundling OFF by default (LESSONS D-005). Off, a module's
+    // `src/<sourceSet>/swift/` still compiles into ITS OWN framework (the
+    // XCFramework SPM consumers get), but isn't copied into the klib — so KMP
+    // consumers who link the klib into their own framework don't get it.
+    //
+    // On (`skie { swiftBundling { enabled.set(true) } }` in a module's build
+    // script — `:kotlinresult` does), the Swift ships in the klib and SKIE
+    // compiles it into EVERY downstream framework that links the module — with
+    // no per-dependency opt-out. That Swift names our types, which only keep
+    // their plain Swift names where the module is exported, so every downstream
+    // framework must then `export(...)` this module or its link fails ("cannot
+    // find type … in scope"). Document that export requirement in the README.
     swiftBundling {
         enabled.set(false)
     }

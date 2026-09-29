@@ -26,9 +26,9 @@ style:
     ignoreEnums: true
     ignoreNumbers: ['-1', '0', '1', '2']
   MaxLineLength:
-    # The project's only line-length limit — ktlint's is off in the root
-    # .editorconfig, so the two linters can't disagree.
-    maxLineLength: 140
+    # ktlint enforces the line length from the root .editorconfig (140), the
+    # single place the number lives; a second copy here could drift from it.
+    active: false
 
 exceptions:
   TooGenericExceptionCaught:

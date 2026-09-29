@@ -77,7 +77,7 @@ description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `c
 # The samples are excluded from lint/check (demo scaffolding, not shipped code),
 # but they must still COMPILE: AndroidX AARs impose compileSdk floors
 # (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
-# runs this. See .claude/lessons/LESSONS.md N-006.
+# runs this. See .claude/lessons/LESSONS.md N-004.
 run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
 
 [tasks."build:xcframework"]
@@ -247,6 +247,11 @@ run = "python3 scripts/changeset.py new"
 description = "Pending changesets, the next version they add up to, and a preview of its changelog entry."
 run = "python3 scripts/changeset.py status"
 
+[tasks."changeset:scope"]
+description = "Which files this branch changes since origin/main, in release scope (.changeset/config.toml) or not — whether the PR needs a changeset."
+# Pass paths to classify them instead, or --since REF for another base.
+run = "python3 scripts/changeset.py scope"
+
 [tasks."changeset:check"]
 description = "Validate every pending changeset — the PR check runs this (plus: the PR must add one)."
 run = "python3 scripts/changeset.py check"
@@ -261,6 +266,18 @@ description = "Publish both modules to the local Maven repo (~/.m2) as the next 
 # development instead — what the pending changesets add up to, else the next
 # patch — as a -SNAPSHOT, which a consumer opts into explicitly.
 run = './gradlew publishToMavenLocal -Pversion="$(python3 scripts/changeset.py snapshot)"'
+
+[tasks."llms:generate"]
+description = "Write each module's llms.txt + llms-full.txt (its public API, from Dokka) to <module>/build/llms/ to preview them."
+# Every published jar and AAR carries this pair under
+# META-INF/<groupId>/<artifactId>/ — packed only by builds that publish
+# (kotlinresult.publish), so check/test runs never pay for Dokka.
+run = "./gradlew :kotlinresult:generateLlmsTxt :kotlinresult-testing:generateLlmsTxt"
+
+[tasks."llms:check"]
+description = "publish:local, then verify every published jar and AAR carries llms.txt + llms-full.txt (CI's Apple leg runs this)."
+depends = ["publish:local"]
+run = 'sh scripts/check-llms.sh "$(python3 scripts/changeset.py snapshot)"'
 
 [tasks."publish:maven"]
 description = "Release by hand: gradle.properties' version, or --version X.Y.Z-rc.1 for a pre-release; --dryrun stages only. See scripts/release.sh."
@@ -286,7 +303,7 @@ sh scripts/release.sh $ARGS
 '''
 
 # --- dependencies ----------------------------------------------------------
-# Renovate (renovate.json5) opens PRs in CI; these are the local equivalents.
+# Nothing bumps dependencies automatically: run these, review the diff, open a PR.
 
 [tasks."dependencies:outdated"]
 description = "List dependencies with newer STABLE versions (ben-manes gradle-versions-plugin)."
@@ -307,7 +324,7 @@ description = "Rewrite gradle/libs.versions.toml to the latest STABLE versions, 
 # gradle/libs.versions.toml` and accept or revert. A new Kotlin passes the
 # stable filter (2.4.20 is "stable"), but Kotlin is bound above by SKIE — a
 # MANUAL, SKIE-paired change — so the `kotlin` ref is VCU-pinned in the root
-# build script: this task never writes it (same policy as renovate.json5).
+# build script: this task never writes it.
 run = "./gradlew versionCatalogUpdate"
 
 # --- aggregates ------------------------------------------------------------

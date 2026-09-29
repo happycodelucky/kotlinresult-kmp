@@ -51,9 +51,10 @@ mise run format
   human has reviewed it (CLAUDE.md §11).
 - CI runs the same `mise run check` + `mise run build:xcframework`. Green CI is
   required to merge.
-- The **Changeset** check fails a PR that adds no `.changeset/*.md`. If nothing
-  in the PR reaches consumers (docs, CI, tests, samples), label it
-  `no-changeset` instead.
+- The **Changeset** check fails a PR that changes a file in release scope
+  (`.changeset/config.toml` — the published modules and build logic, not docs,
+  CI, tests or samples) and adds no `.changeset/*.md`. If it still reaches no
+  consumer, label it `no-changeset` instead.
 - Learned something non-obvious? Add a terse line to
   `.claude/lessons/LESSONS.md`.
 

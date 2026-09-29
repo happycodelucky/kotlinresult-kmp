@@ -38,7 +38,7 @@ Closes #
 - `major` — breaking change · `.changeset/<file>.md`
 - `minor` — new, compatible feature · `.changeset/<file>.md`
 - `patch` — bug fix · `.changeset/<file>.md`
-- None — nothing here reaches consumers (docs, CI, tests, samples); labelled `no-changeset`
+- None — nothing here reaches consumers: no file in release scope (`.changeset/config.toml`), or labelled `no-changeset`
 
 ## Affected platforms
 
@@ -102,12 +102,12 @@ Closes #
 
 - [ ] `mise run check` passes (ktlint + detekt + ABI check + every test target, both modules)
 - [ ] Native + Android compile clean (`:kotlinresult:compileKotlinMacosArm64` / `compileKotlinIosSimulatorArm64` / `compileAndroidMain`) — the JVM compile alone is not a sufficient gate
-- [ ] `mise run build:samples` passes if dependencies or the public API changed — `check` never builds the sample apps (LESSONS N-006)
+- [ ] `mise run build:samples` passes if dependencies or the public API changed — `check` never builds the sample apps (LESSONS N-004)
 - [ ] New/changed logic has `commonTest` coverage (`runTest` virtual time, no `Thread.sleep`)
 - [ ] Public API changes follow the Swift-interop rules (§7): sealed → exhaustive enum, `@Throws` replicated on every `actual` incl. `CancellationException`, no `kotlin.Result<T>` at the boundary
 - [ ] If the public API changed intentionally, `mise run api:dump` was run and the `api/` diff is committed and reviewed (§8)
 - [ ] New dependencies were sourced per §5 (official Kotlin → Google KMP → kmp-awesome), are stable, and were added to `gradle/libs.versions.toml` only
-- [ ] A changeset is committed (`mise run changeset`) with its release note written in place of the Unfilled callout, or the PR is labelled `no-changeset` because nothing in it reaches consumers (§8) — the Changeset check enforces both
+- [ ] A changeset is committed (`mise run changeset`) with its release note written in place of the Unfilled callout, or nothing in it reaches consumers: it changes no file in release scope (`.changeset/config.toml`) or is labelled `no-changeset` (§8) — the Changeset check enforces both
 - [ ] Docs updated (`docs/` + KDoc) for any public API or behavior change
 - [ ] Anything non-obvious learned is recorded in `.claude/lessons/LESSONS.md` (§11)
 - [ ] No hard-rule violations (§12): no Compose MP, CocoaPods, `GlobalScope`, `!!` in production, `java.time` in common, `@Synchronized`/`volatile`, callback public APIs, EAP/RC/Beta deps
