@@ -16,7 +16,7 @@
 
 include = [
     # The published modules: sources, resources, public-API dumps, build scripts.
-    # (`kotlinresult/src/appleMain/swift/` included: SPM and KMP consumers get it.)
+    # (`kotlinresult/src/appleMain/swift/` included: it ships in the Apple klibs.)
     "/kotlinresult/",
     "/kotlinresult-testing/",
     # Shared build logic: the version catalog, convention plugins, wrapper.
@@ -24,8 +24,6 @@ include = [
     "/build.gradle.kts",
     "/settings.gradle.kts",
     "/gradle.properties",
-    # The SPM manifest Swift consumers resolve.
-    "/Package.swift",
 ]
 
 exclude = [

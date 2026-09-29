@@ -22,15 +22,10 @@
 #              Review at https://central.sonatype.com/.
 #
 #   (real)   : the full release, after a typed confirmation:
-#              1. build + zip the release XCFramework, and write Package.swift
-#                 in its released remote-binary form (URL + checksum of this
-#                 tag's asset);
-#              2. publishAndReleaseToMavenCentral  (IRREVERSIBLE);
-#              3. commit Package.swift on a detached HEAD and tag it vX.Y.Z —
-#                 like CI, the release commit lives only on the tag; main
-#                 keeps the local-dev Package.swift and is never pushed;
-#              4. push the tag, then `gh release create` with the XCFramework
-#                 zip and the changelog's notes.
+#              1. publishAndReleaseToMavenCentral  (IRREVERSIBLE);
+#              2. tag HEAD vX.Y.Z and push the tag;
+#              3. `gh release create` with the changelog's notes (no assets —
+#                 Maven Central is the only distribution channel).
 #
 # Required for a REAL release: a clean git tree, `gh` authenticated, and the
 # Maven Central credentials exported as the ORG_GRADLE_PROJECT_* env vars
@@ -78,7 +73,6 @@ case "$VERSION" in
         ;;
 esac
 TAG="v$VERSION"
-FRAMEWORK="KotlinresultKit"   # init.sh rewrites this to the framework module name.
 
 # Fail fast if the Maven Central credentials vanniktech needs aren't available.
 # A Gradle property `foo` resolves from an ORG_GRADLE_PROJECT_foo env var or from
@@ -140,8 +134,8 @@ echo "  tag     : $TAG"
 echo "  repo    : ${REPO:-<unknown>}"
 echo "  pre-release: $PRERELEASE"
 echo "  Maven Central: publishAndReleaseToMavenCentral (cannot be undone)"
-echo "  git     : tag $TAG on a release commit (Package.swift) + push the tag"
-echo "  GitHub  : create release $TAG with the $FRAMEWORK.xcframework zip asset"
+echo "  git     : tag $TAG at HEAD + push the tag"
+echo "  GitHub  : create release $TAG with the changelog's notes"
 echo ""
 printf 'Type the version (%s) to confirm: ' "$VERSION"
 read -r CONFIRM
@@ -150,63 +144,17 @@ if [ "$CONFIRM" != "$VERSION" ]; then
     exit 1
 fi
 
-# 1. Build the release XCFramework + zip it (the SPM asset).
-echo "==> Building release XCFramework"
-./gradlew ":kotlinresult:assemble${FRAMEWORK}XCFramework" -Pversion="$VERSION"
-XCF_DIR="kotlinresult/build/XCFrameworks/release"
-ZIP="$XCF_DIR/$FRAMEWORK.xcframework.zip"
-( cd "$XCF_DIR" && rm -f "$FRAMEWORK.xcframework.zip" && zip -qry "$FRAMEWORK.xcframework.zip" "$FRAMEWORK.xcframework" )
-
-# 2. Rewrite Package.swift to the released remote-binary form (URL + checksum).
-ASSET_URL="https://github.com/$REPO/releases/download/$TAG/$FRAMEWORK.xcframework.zip"
-CHECKSUM=$(swift package compute-checksum "$ZIP")
-echo "==> Pointing Package.swift at $ASSET_URL"
-cat > Package.swift <<EOF
-// swift-tools-version:6.0
-import PackageDescription
-
-let packageName = "$FRAMEWORK"
-
-let package = Package(
-    name: packageName,
-    platforms: [
-        .iOS(.v18),
-        .macOS(.v15),
-    ],
-    products: [
-        .library(
-            name: packageName,
-            targets: [packageName]
-        ),
-    ],
-    targets: [
-        .binaryTarget(
-            name: packageName,
-            url: "$ASSET_URL",
-            checksum: "$CHECKSUM"
-        ),
-    ]
-)
-EOF
-swift package dump-package > /dev/null   # prove the manifest still parses.
-
-# 3. Publish + release to Maven Central (IRREVERSIBLE).
+# 1. Publish + release to Maven Central (IRREVERSIBLE).
 echo "==> Publishing to Maven Central"
 ./gradlew publishAndReleaseToMavenCentral -Pversion="$VERSION"
 
-# 4. Tag a release commit that carries Package.swift. It lives only on the tag
-#    (SPM resolves the manifest from the tag); main is branch-protected and
-#    keeps the local-dev form, so nothing is pushed to a branch.
-echo "==> Tagging the release commit"
-git switch --detach --quiet
-git add Package.swift
-git commit --quiet -m "Release $TAG" -m "Package.swift points at the $TAG XCFramework release asset."
+# 2. Tag the released commit.
+echo "==> Tagging $TAG"
 git tag -a "$TAG" -m "Release $TAG"
 git push origin "refs/tags/$TAG"
-git switch --quiet "$BRANCH"
 
-# 5. GitHub release with the XCFramework asset and the changelog's notes (for
-#    a pre-release: the changesets pending on this branch).
+# 3. GitHub release with the changelog's notes (for a pre-release: the
+#    changesets pending on this branch).
 echo "==> Creating GitHub release $TAG"
 NOTES=$(mktemp)
 if python3 "$SCRIPT_DIR/changeset.py" notes "$VERSION" > "$NOTES"; then
@@ -220,7 +168,7 @@ else
     LATEST_ARGS="--latest"
 fi
 # shellcheck disable=SC2086
-gh release create "$TAG" "$ZIP" --title "$TAG" $NOTES_ARGS $LATEST_ARGS
+gh release create "$TAG" --title "$TAG" $NOTES_ARGS $LATEST_ARGS
 rm -f "$NOTES"
 
 echo ""

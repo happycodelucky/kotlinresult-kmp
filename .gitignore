@@ -21,10 +21,6 @@ DerivedData/
 *.xcscmblueprint
 *.xccheckout
 
-# --- Sample apps: Xcode projects are generated from project.yml via xcodegen ---
-apps/ios/iOSApp.xcodeproj/
-apps/macos/macOSApp.xcodeproj/
-
 # --- mise: per-user version overrides ---
 .mise.local.toml
 
@@ -35,9 +31,6 @@ apps/macos/macOSApp.xcodeproj/
 *.framework.dSYM
 *.xcframework
 .build/
-
-# --- KMMBridge transient outputs ---
-spm/
 
 # --- Docs: mkdocs build output + Dokka generated API reference ---
 /site/

@@ -10,7 +10,7 @@
 #   gradle/wrapper/gradle-wrapper.properties  (distributionUrl)
 #
 # Single source of truth for non-Gradle build deps. Versions for Kotlin, AGP,
-# SKIE, KMMBridge, ktlint-gradle, etc. live in gradle/libs.versions.toml
+# SKIE, ktlint-gradle, etc. live in gradle/libs.versions.toml
 # (CLAUDE.md §3) — mise must not duplicate them.
 #
 # Bootstrap on a fresh machine:
@@ -28,7 +28,6 @@
 java     = "temurin-21"
 gradle   = "9.7.1"        # Matches gradle/wrapper/gradle-wrapper.properties.
 python   = "3.14"         # mkdocs toolchain (docs:* tasks).
-xcodegen = "latest"       # apps/ios + apps/macos project generation.
 gh       = "latest"       # release.yml uses gh.
 
 # Deliberately NOT pinned here:
@@ -53,16 +52,12 @@ gh       = "latest"       # release.yml uses gh.
 description = "Assemble the :kotlinresult library (all production targets)."
 run = "./gradlew :kotlinresult:assemble"
 
-[tasks."build:ios"]
-description = "Link debug iOS framework slices (device + Apple Silicon simulator)."
-run = """
-./gradlew :kotlinresult:linkDebugFrameworkIosArm64 \
-          :kotlinresult:linkDebugFrameworkIosSimulatorArm64
-"""
-
-[tasks."build:macos"]
-description = "Link the debug macOS framework slice (Apple Silicon)."
-run = "./gradlew :kotlinresult:linkDebugFrameworkMacosArm64"
+[tasks."build:swift"]
+description = "Link :apple-consumer's debug frameworks (macOS + iOS simulator) — proves the Swift :kotlinresult bundles compiles in a consumer that exports it."
+# :kotlinresult ships klibs only; its bundled Swift is compiled by each
+# CONSUMER's SKIE. `check` never links a framework, so this is the only gate on
+# that Swift. CI's Apple leg runs it (and test:swift).
+run = "./gradlew :apple-consumer:linkDebugFrameworkMacosArm64 :apple-consumer:linkDebugFrameworkIosSimulatorArm64"
 
 [tasks."build:android"]
 description = "Assemble the Android AAR."
@@ -79,10 +74,6 @@ description = "Build the Gradle sample apps (Android debug APK + JVM CLI) — `c
 # (aar-metadata minCompileSdk) that only an app build enforces. CI's fast leg
 # runs this. See .claude/lessons/LESSONS.md N-004.
 run = "./gradlew :androidApp:assembleDebug :jvm-cli:build"
-
-[tasks."build:xcframework"]
-description = "Build the release XCFramework (all slices — iosArm64, iosSimulatorArm64, macosArm64)."
-run = "./gradlew :kotlinresult:assembleKotlinresultKitXCFramework"
 
 # --- test ------------------------------------------------------------------
 
@@ -105,6 +96,17 @@ run = "./gradlew :kotlinresult:testAndroidHostTest :kotlinresult-testing:testAnd
 [tasks."test:apple"]
 description = "Both Apple test targets (macOS arm64 + iOS simulator arm64)."
 depends = ["test", "test:ios"]
+
+[tasks."test:swift"]
+description = "Run apps/apple-consumer/swift/main.swift against the macOS consumer framework — the Swift helpers end to end."
+depends = ["build:swift"]
+run = """
+FW=apps/apple-consumer/build/bin/macosArm64/debugFramework
+OUT=apps/apple-consumer/build/swift-check
+mkdir -p "$OUT"
+swiftc -F "$FW" -framework AppleConsumerKit -o "$OUT/check" apps/apple-consumer/swift/main.swift
+"$OUT/check"
+"""
 
 [tasks."test:all"]
 description = "Every test target across every platform."
@@ -155,47 +157,6 @@ description = "Profile a real build — per-task timings, configuration time, de
 # build feels slow. Deprecations and configuration-cache problems are listed
 # separately in build/reports/problems/problems-report.html on every build.
 run = "./gradlew assemble --profile"
-
-# --- iteration helpers (Apple) ---------------------------------------------
-
-[tasks."spm:dev"]
-description = "Rebuild the debug XCFramework and point /Package.swift at it (local dev mode)."
-# KMMBridge's `spmDevBuild` builds the debug XCFramework and REWRITES the root
-# /Package.swift to a `.binaryTarget(path: …)` pointing at the local build, so
-# the sample apps pick up local Kotlin edits without Gradle inside Xcode. The
-# committed Package.swift on main is always a local-dev form; the released
-# remote `.binaryTarget(url:checksum:)` form exists only on each vX.Y.Z tag
-# (.github/PUBLISHING.md). KMMBridge's rewrite differs from the committed file:
-# don't commit it — `mise run spm:restore` restores it.
-run = "./gradlew :kotlinresult:spmDevBuild"
-
-[tasks."spm:restore"]
-description = "Restore the committed /Package.swift after spm:dev rewrote it."
-run = "git restore Package.swift"
-
-[tasks."xcodeproj:ios"]
-description = "Generate apps/ios/iOSApp.xcodeproj from project.yml (needs xcodegen)."
-dir = "apps/ios"
-run = "xcodegen generate --spec project.yml"
-
-[tasks."xcodeproj:macos"]
-description = "Generate apps/macos/macOSApp.xcodeproj from project.yml."
-dir = "apps/macos"
-run = "xcodegen generate --spec project.yml"
-
-# --- open (IDE / Xcode) ----------------------------------------------------
-
-[tasks."open:ios"]
-description = "spm:dev + xcodegen + open apps/ios in Xcode."
-depends = ["spm:dev", "xcodeproj:ios"]
-dir = "apps/ios"
-run = "open iOSApp.xcodeproj"
-
-[tasks."open:macos"]
-description = "spm:dev + xcodegen + open apps/macos in Xcode."
-depends = ["spm:dev", "xcodeproj:macos"]
-dir = "apps/macos"
-run = "open macOSApp.xcodeproj"
 
 [tasks."open:android"]
 description = "Open apps/android in Android Studio."
@@ -287,9 +248,8 @@ description = "Release by hand: gradle.properties' version, or --version X.Y.Z-r
 # --version names a pre-release. scripts/release.sh orchestrates:
 #   --dryrun : publishToMavenCentral (Central STAGING only; nothing committed,
 #              tagged, or released). Safe to run repeatedly.
-#   (real)   : after a typed confirmation — build the XCFramework, publish +
-#              release to Maven Central (IRREVERSIBLE), tag vX.Y.Z on a release
-#              commit carrying Package.swift, and `gh release create`.
+#   (real)   : after a typed confirmation — publish + release to Maven Central
+#              (IRREVERSIBLE), tag vX.Y.Z at HEAD, and `gh release create`.
 usage = '''
 flag "--version <version>" help="Release this version instead of gradle.properties' — a pre-release like 0.4.0-rc.1."
 flag "--dryrun" help="Upload to Central staging only; no release, tag, or commit."
@@ -330,8 +290,9 @@ run = "./gradlew versionCatalogUpdate"
 # --- aggregates ------------------------------------------------------------
 
 [tasks.ci]
-description = "Run the exact CI sequence locally: check + release XCFramework."
-run = "./gradlew :kotlinresult:check :kotlinresult-testing:check :kotlinresult:assembleKotlinresultKitXCFramework"
+description = "Run the Apple CI leg locally: check + the consumer-framework Swift check."
+depends = ["check", "test:swift"]
+run = "true"
 
 [tasks.clean]
 description = "Gradle clean."

@@ -55,8 +55,8 @@ YAML would misread. HTML comments in the body are dropped; a leftover
    adds the release's section to `docs/changelog.md`, and deletes the
    changesets it consumed. Don't push to that branch: it's rebuilt from `main`
    on every merge. To reword an entry, edit its changeset in a normal PR.
-3. **Release.** Merging the release PR publishes that version to Maven Central
-   and GitHub Releases (SPM), then deploys the docs site. See
+3. **Release.** Merging the release PR publishes that version to Maven Central,
+   tags it with a GitHub Release, then deploys the docs site. See
    [`.github/PUBLISHING.md`](../.github/PUBLISHING.md).
 
 ### Release scope
@@ -65,7 +65,7 @@ YAML would misread. HTML comments in the body are dropped; a leftover
 globs: a file is in scope when it matches an `include` glob and no `exclude`
 glob. It covers the published modules (`kotlinresult/`,
 `kotlinresult-testing/`, their bundled Swift included) and the build logic that shapes them (`gradle/`, the root
-build scripts, `gradle.properties`, `Package.swift`), minus test source sets
+build scripts, `gradle.properties`), minus test source sets
 and Markdown. Everything else (docs, CI, sample apps, scripts, agent files)
 never needs a changeset, though a PR may still add one to get a line in the
 changelog.

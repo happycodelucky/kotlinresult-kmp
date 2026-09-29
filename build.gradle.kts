@@ -16,7 +16,6 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.skie) apply false
-    alias(libs.plugins.kmmbridge.github) apply false
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
@@ -101,11 +100,12 @@ dependencyAnalysis {
 }
 
 subprojects {
-    // ktlint + detekt wire onto the KMP plugin — i.e. onto the published
-    // library modules only (CLAUDE.md §3). The sample apps (`:androidApp`,
-    // `:jvm-cli`) are demo scaffolding, not shipped code, and are intentionally
-    // excluded from Kotlin lint and from CI's check task.
-    pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+    // ktlint + detekt wire onto the library convention plugin — i.e. onto the
+    // published library modules only (CLAUDE.md §3). The sample apps
+    // (`:androidApp`, `:jvm-cli`, `:apple-consumer`) are demo scaffolding, not
+    // shipped code, and are intentionally excluded from Kotlin lint and from
+    // CI's check task.
+    pluginManager.withPlugin("kotlinresult.kmp-library") {
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
         apply(plugin = "io.gitlab.arturbosch.detekt")
         // dependency-analysis's project plugin does NOT auto-apply from the root
@@ -230,10 +230,9 @@ versionCatalogUpdate {
     sortByKey.set(false)
     keep {
         // Keys no library/plugin references: android-compile-sdk,
-        // android-min-compile-sdk, android-min-sdk and jvm-target (read via the string-based findVersion("…") API in the
-        // convention plugin, invisible to VCU's usage scan), and the Apple
-        // deployment targets (documentation for the floors spelled out in
-        // kotlinresult/build.gradle.kts and Package.swift). Without this, VCU prunes them.
+        // android-min-compile-sdk, android-min-sdk and jvm-target, read via the
+        // string-based findVersion("…") API in the convention plugin, invisible
+        // to VCU's usage scan. Without this, VCU prunes them.
         keepUnusedVersions.set(true)
     }
     pin {

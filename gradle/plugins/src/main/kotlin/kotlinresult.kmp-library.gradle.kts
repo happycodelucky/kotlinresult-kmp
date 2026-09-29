@@ -4,23 +4,18 @@
  *
  * Owns everything the modules would otherwise duplicate (CLAUDE.md §4, §5): the
  * target matrix, the apple intermediate source set, the Android library block,
- * the jvm() target, compiler options, JVM target wiring, and the SKIE settings
- * that must match across modules. Per-module
- * identity (framework base name, bundle id, Android namespace) is DERIVED from
- * the project name, so adding a module means applying this plugin and nothing
- * else:
+ * the jvm() target, compiler options and JVM target wiring. The Android
+ * namespace is DERIVED from the project name, so adding a module means applying
+ * this plugin and nothing else:
  *
- *   src          → framework "SrcKit",        namespace com.happycodelucky.kotlinresult
- *   src-testing  → framework "SrcTestingKit", namespace com.happycodelucky.kotlinresult.testing
+ *   kotlinresult          → com.happycodelucky.kotlinresult
+ *   kotlinresult-testing  → com.happycodelucky.kotlinresult.testing
  *
- * `mise run init <name>` renames the module directories (src → <name>,
- * src-testing → <name>-testing); the derivations below then produce the right
- * framework name and namespace with zero token replacement. The group prefix
- * `com.happycodelucky` is the at-rest default — init.sh rewrites it only when
- * `--group` differs.
+ * The Apple targets publish klibs only — no framework is built or shipped here
+ * (CLAUDE.md §8): consumers link the klibs into their own frameworks.
  *
- * Module build scripts keep only what genuinely differs: dependencies, the
- * KMMBridge SPM distribution config (`:kotlinresult` only), and POM name/description.
+ * Module build scripts keep only what genuinely differs: dependencies, SKIE's
+ * Swift bundling (`:kotlinresult` only), and POM name/description.
  */
 
 import org.gradle.api.artifacts.VersionCatalogsExtension
@@ -31,7 +26,6 @@ import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.kotlin.multiplatform.library")
-    id("co.touchlab.skie")
     id("org.jetbrains.dokka")
 }
 
@@ -39,16 +33,7 @@ plugins {
 // the named-lookup API reads the same catalog the main build uses.
 val libs = the<VersionCatalogsExtension>().named("libs")
 
-// src → "SrcKit"; src-testing → "SrcTestingKit". The "Kit" suffix keeps the Swift
-// module name distinct from the library's public types: a module and a type with
-// the same name make SKIE rename the type in Swift (`Wake` → `Wake_`) and let the
-// bare type shadow the module qualifier in SKIE's generated code (LESSONS D-002).
-val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) } + "Kit"
-
-// src → com.happycodelucky.kotlinresult; src-testing → ….src.testing.
-// Doubles as the framework bundle id, pinned so SKIE doesn't fall back to the
-// framework name. The "com.happycodelucky" prefix is the group default; init.sh
-// rewrites it when `--group` differs.
+// kotlinresult → com.happycodelucky.kotlinresult; kotlinresult-testing → ….kotlinresult.testing.
 val moduleNamespace = "com.happycodelucky." + name.replace("-", ".")
 
 // Bytecode level for BOTH JVM-flavored targets (android + jvm) — a consumer
@@ -70,16 +55,12 @@ kotlin {
     // (e.g. UIKit). Declaring any manual dependsOn() edge disables the template.
 
     // --- Apple targets (CLAUDE.md §4) ---------------------------------------
-    // Static framework binaries with a stable bundle id. In `:kotlinresult`, KMMBridge
-    // aggregates these into `SrcKit.xcframework` at config time (no explicit
-    // XCFramework declaration — see kotlinresult/build.gradle.kts).
-    listOf(iosArm64(), iosSimulatorArm64(), macosArm64()).forEach { target ->
-        target.binaries.framework {
-            baseName = frameworkBaseName
-            isStatic = true
-            binaryOption("bundleId", moduleNamespace)
-        }
-    }
+    // klibs only: no framework binaries. This library is consumed through KMP —
+    // a downstream module links these klibs into ITS framework (and must
+    // `export` :kotlinresult there, CLAUDE.md §7). Nothing here ships to SPM.
+    iosArm64()
+    iosSimulatorArm64()
+    macosArm64()
 
     // --- Android target (CLAUDE.md §4) --------------------------------------
     // The new com.android.kotlin.multiplatform.library plugin's android {} block.
@@ -128,8 +109,7 @@ kotlin {
 
     // --- JVM target (desktop / server / Linux / Windows) --------------------
     // Architecture-neutral bytecode — the one target the ARM-only rule doesn't
-    // touch. No SKIE, no KMMBridge — the JVM ships through Maven Central only,
-    // like Android.
+    // touch. Ships through Maven Central, like every target.
     jvm {
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
@@ -161,30 +141,4 @@ kotlin {
     // `enabled.set(true)` property was removed.
     @OptIn(ExperimentalAbiValidation::class)
     abiValidation { }
-}
-
-skie {
-    // SKIE handles the Kotlin → Swift bridge enhancements (CLAUDE.md §7):
-    // exhaustive sealed switching, suspend → async/await, Flow → AsyncSequence,
-    // default-arg overloads. All feature defaults stay on; tighten only when
-    // something bites.
-    analytics {
-        // Disable opt-in analytics; revisit if useful.
-        disableUpload.set(true)
-    }
-    // Swift bundling OFF by default (LESSONS D-005). Off, a module's
-    // `src/<sourceSet>/swift/` still compiles into ITS OWN framework (the
-    // XCFramework SPM consumers get), but isn't copied into the klib — so KMP
-    // consumers who link the klib into their own framework don't get it.
-    //
-    // On (`skie { swiftBundling { enabled.set(true) } }` in a module's build
-    // script — `:kotlinresult` does), the Swift ships in the klib and SKIE
-    // compiles it into EVERY downstream framework that links the module — with
-    // no per-dependency opt-out. That Swift names our types, which only keep
-    // their plain Swift names where the module is exported, so every downstream
-    // framework must then `export(...)` this module or its link fails ("cannot
-    // find type … in scope"). Document that export requirement in the README.
-    swiftBundling {
-        enabled.set(false)
-    }
 }

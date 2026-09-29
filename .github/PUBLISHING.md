@@ -1,9 +1,13 @@
 # Publishing
 
-KotlinResult ships via two independent channels from `.github/workflows/release.yml`:
-
-- **Maven Central** — Android AAR, `kotlinMultiplatform` metadata, per-target klibs. For Gradle/KMP consumers.
-- **GitHub Releases** (via KMMBridge) — the SKIE-enhanced `KotlinresultKit.xcframework` zip. For pure-Swift SPM consumers.
+KotlinResult ships through one channel, **Maven Central**, from
+`.github/workflows/release.yml`: the Android AAR, the jvm jar,
+`kotlinMultiplatform` metadata and per-target klibs, for Gradle / KMP consumers.
+It's a building block for KMP libraries, so there is no XCFramework or Swift
+package: Swift gets it inside the framework of the library that exports it, and
+the Apple klibs carry the SKIE-bundled Swift helpers for that framework to
+compile. Each release is also tagged `vX.Y.Z` with a GitHub Release holding its
+notes (no assets).
 
 ## Maven Central
 
@@ -13,7 +17,8 @@ One Gradle invocation publishes:
 
 - The Android AAR.
 - The `kotlinMultiplatform` metadata module (`.module` file) that ties every target together.
-- Per-target klibs: `kotlinresult-iosarm64`, `kotlinresult-iossimulatorarm64`, `kotlinresult-macosarm64`, `kotlinresult-android`.
+- The jvm jar: `kotlinresult-jvm`.
+- Per-target klibs: `kotlinresult-iosarm64`, `kotlinresult-iossimulatorarm64`, `kotlinresult-macosarm64` (each carrying `default/skie/swift/KotlinResult+Swift.swift`), and `kotlinresult-android`.
 - Sources / javadoc jars next to each, with detached GPG signatures.
 
 The test-fakes module publishes alongside it under `com.happycodelucky.kotlinresult:kotlinresult-testing`.
@@ -29,7 +34,7 @@ flowchart LR
     PR["PR + .changeset/*.md"] -->|merge| main
     main -->|Release PR workflow| RPR["Release vX.Y.Z PR<br/>(release/next)"]
     RPR -->|merge| main2["main: version=X.Y.Z"]
-    main2 -->|Release workflow| out["Maven Central<br/>GitHub Release + SPM tag<br/>docs site"]
+    main2 -->|Release workflow| out["Maven Central<br/>vX.Y.Z tag + GitHub Release<br/>docs site"]
 ```
 
 1. **Every PR adds a changeset** — `mise run changeset` writes
@@ -50,8 +55,8 @@ flowchart LR
    deletes the consumed changesets. Later merges fold into the same PR.
 3. **Merging the release PR publishes it.** Its version bump lands on `main`;
    `release.yml` sees `version=` change on a push to `main` and releases exactly
-   that version — Maven Central first (irreversible), then the XCFramework to a
-   GitHub Release plus the `vX.Y.Z` tag — and, only once all of that succeeded,
+   that version — Maven Central first (irreversible), then the `vX.Y.Z` tag and
+   its GitHub Release (the changelog notes) — and, only once all of that succeeded,
    deploys the docs site. `main` then *is* the release: its version, README and
    changelog already match what was published.
 
@@ -71,13 +76,13 @@ Run **Release** from the Actions tab (`workflow_dispatch`):
 `dryRun` defaults to **true** for manual runs: it uploads to the Central Portal
 staging area only (`publishToMavenCentral`). Review the deployment at
 https://central.sonatype.com/ and click Publish (or Drop). Nothing is tagged
-and no XCFramework is published. Merging a release PR is always a real
+and no GitHub Release is created. Merging a release PR is always a real
 release.
 
 **If a release fails part-way**, re-run the failed jobs from the Actions UI (a
 re-run replays the same commit). The release job resumes: a version already on
-Maven Central skips straight to the GitHub/SPM half; a version that already has
-a GitHub Release is refused.
+Maven Central skips straight to the tag and GitHub Release; a version that
+already has a GitHub Release is refused.
 
 The `automaticRelease = false` flag in the publish convention plugin
 (`gradle/plugins/…publish.gradle.kts`) is what makes dry-run behaviour correct.
@@ -116,11 +121,9 @@ mise run publish:maven --version 0.4.0-rc.1        # a pre-release, from any bra
 - **`--dryrun`** — runs `publishToMavenCentral` (Central staging only). Nothing
   is committed, tagged, or released. Safe to run repeatedly.
 - **Real release** — after a typed confirmation (it echoes the plan first;
-  Maven Central is irreversible), it: builds the XCFramework and writes
-  `Package.swift` in its released remote-binary form (URL + checksum), runs
-  `publishAndReleaseToMavenCentral`, tags `vX.Y.Z` on a release commit carrying
-  that `Package.swift` (never pushed to a branch), and runs `gh release create`
-  with the XCFramework zip and the changelog's notes. It doesn't deploy the
+  Maven Central is irreversible), it runs `publishAndReleaseToMavenCentral`,
+  tags `vX.Y.Z` at HEAD and pushes the tag, and runs `gh release create` with
+  the changelog's notes. It doesn't deploy the
   docs site — `gh workflow run docs.yml -f deploy=true` does.
 
 Requires a clean tree, an authenticated `gh`, and the Maven Central credentials configured (next section).
@@ -166,38 +169,14 @@ signingInMemoryKey=-----BEGIN PGP PRIVATE KEY BLOCK-----\n…\n-----END PGP PRIV
 
 Or export the matching `ORG_GRADLE_PROJECT_*` env vars in your shell instead. `mise run publish:maven` checks they're present before it builds and fails fast with this guidance if not. A `--dryrun` still needs the signing key (Central validates signatures even in staging).
 
-## SPM distribution — KMMBridge → GitHub Releases
-
-Touchlab's KMMBridge publishes the Apple framework to pure-Swift SPM consumers. The pipeline (real publishes only, not dry-run):
-
-1. Gradle builds an `XCFramework` with `iosArm64` + `iosSimulatorArm64` + `macosArm64` slices. No x86. SKIE-enhanced (`produceDistributableFramework()` emits `.swiftinterface` files required by Xcode 26).
-2. KMMBridge zips the XCFramework and uploads it as a GitHub Release asset. GitHub *Releases*, not GitHub *Packages* — Packages requires a PAT to download even from public repos; Release assets are public and unauthenticated.
-3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form, commits `Package.swift` on a detached **release commit**, and force-moves the version tag onto it so the tagged manifest matches the uploaded binary.
-4. Swift consumers add this repo's URL as an SPM dependency pinned to a version tag; the tagged `Package.swift` hands them the prebuilt binary.
-
-The release commit lives **only on its tag**. `main` is branch-protected (a bot
-push is rejected) and doesn't need it: `main` keeps the local-dev
-`Package.swift` the sample apps build against, and a consumer pinned to
-`branch: "main"` isn't a supported way to consume a binary target.
-
-### Rules
-
-- KMMBridge config lives in the `kmmbridge { }` block in `kotlinresult/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml`. Only `:kotlinresult` gets KMMBridge — `:kotlinresult-testing` ships klibs via Maven Central only.
-- Do **not** redeclare `XCFramework("KotlinresultKit")` in the `kotlin { }` block: KMMBridge auto-creates the aggregator tasks (`assembleKotlinresultKit{Debug,Release}XCFramework`) at config time; a second declaration collides.
-- Versioning: the release workflow passes `-Pversion=X.Y.Z` — `gradle.properties`' version, or a pre-release's — and KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
-- Publishing is CI-only: the `kmmBridgePublish` task only exists when `-PENABLE_PUBLISHING=true` is passed (the release workflow does this).
-- Don't vendor `XCFramework` zips into the repo. Everything flows through GitHub Release assets + the committed `Package.swift`.
-- `Package.swift` on `main` is the committed local-dev form; `kmmBridgePublish` writes the released form onto each tag's release commit, and `spmDevBuild` rewrites it for local development. Don't commit either rewrite (`mise run spm:restore`).
-
-## Local XCFramework development
-
-The sample apps under `/apps/ios` and `/apps/macos` consume the root `Package.swift` as a local package.
+## Local builds
 
 ```bash
-mise run spm:dev        # rebuild debug XCFramework + flip Package.swift to local path
-mise run spm:restore    # restore the committed Package.swift
-mise run build:xcframework  # rebuild release XCFramework without touching Package.swift
 mise run publish:local  # publish to ~/.m2 as the next X.Y.Z-SNAPSHOT (never the released version)
+mise run test:swift     # link :apple-consumer (exports :kotlinresult) + run the Swift helpers
 ```
 
-The committed `Package.swift` always points at the local build path; released versions resolve their remote-binary `Package.swift` from their `vX.Y.Z` tag.
+`test:swift` is the only place this repo compiles the bundled Swift: no
+framework is built from `:kotlinresult` itself, so the Swift is exercised the
+way consumers see it — unpacked from the klib by a consumer's SKIE (CI's Apple
+leg runs it).

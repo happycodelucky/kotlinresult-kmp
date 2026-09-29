@@ -86,7 +86,8 @@ jobs:
 
   # --- Apple leg: the expensive Mac-only verification ------------------------
   # Keep the costly macOS runner focused: the full `check` (which adds the Apple
-  # test targets + the cross-target ABI check) and the release XCFramework link.
+  # test targets + the cross-target ABI check) and the Swift check — the one
+  # place the Swift :kotlinresult bundles into its klibs gets compiled and run.
   apple:
     name: Apple build + full check
     runs-on: macos-latest
@@ -120,15 +121,17 @@ jobs:
 
       # `mise run check` runs ktlint + detekt + the public-API/ABI check + every
       # unit-test target (iosSimulatorArm64Test, macosArm64Test,
-      # testAndroidHostTest, jvmTest). `mise run build:xcframework` builds the
-      # KMMBridge-consumable artifact. The CI version stamp is passed through via
-      # ORG_GRADLE_PROJECT_version — the env-var form of `-Pversion=…`.
-      - name: Full check + assemble XCFramework
+      # testAndroidHostTest, jvmTest). `mise run test:swift` links
+      # :apple-consumer's frameworks (it exports :kotlinresult, as consumers
+      # must), so SKIE compiles the bundled KotlinResult+Swift.swift, then runs
+      # a Swift program against the helpers. The CI version stamp is passed
+      # through via ORG_GRADLE_PROJECT_version — the env-var form of `-Pversion=…`.
+      - name: Full check + Swift check
         env:
           ORG_GRADLE_PROJECT_version: ${{ steps.version.outputs.VERSION }}
         run: |
           mise run check
-          mise run build:xcframework
+          mise run test:swift
 
       # Every jar and the AAR a release uploads must carry llms.txt +
       # llms-full.txt (kotlinresult.publish). Publishing to ~/.m2 builds exactly
@@ -136,18 +139,6 @@ jobs:
       # are only built here, on the Apple leg.
       - name: Verify llms.txt ships in every artifact
         run: mise run llms:check
-
-      - name: Upload XCFramework
-        uses: actions/upload-artifact@v7
-        with:
-          name: KotlinResult-${{ steps.version.outputs.VERSION }}.xcframework
-          path: kotlinresult/build/XCFrameworks/release/KotlinresultKit.xcframework
-          # `warn` (not `error`) so the UN-RENDERED template repo's own CI stays
-          # green: here KotlinresultKit is a literal token, so the path never
-          # matches and the build produces SrcKit.xcframework instead. `mise run
-          # init` flips this to `error` in the rendered project, where the path
-          # resolves and a missing artifact is a real failure.
-          if-no-files-found: error
 
       - name: Upload test reports on failure
         if: failure()

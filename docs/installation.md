@@ -4,9 +4,10 @@ title: Installation
 
 # Installation
 
-KotlinResult is distributed two ways: through Maven Central for Gradle / KMP
-consumers, and through GitHub Releases (as an XCFramework) for pure-Swift Swift
-Package Manager consumers.
+KotlinResult is published to Maven Central for Gradle / KMP consumers. It's a
+building block for KMP libraries, so there is no XCFramework or Swift package:
+Swift reaches it through your library's framework (see
+[Use it from a KMP library](recipes/kmp-library.md) for the required `export`).
 
 ## Gradle
 
@@ -33,16 +34,3 @@ dependencies {
     implementation(libs.kotlinresult)
 }
 ```
-
-## Swift Package Manager
-
-Add this repository as a package dependency, pinned to a release tag:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/happycodelucky/kotlinresult-kmp.git", from: "{{ version }}")
-]
-```
-
-The tagged `Package.swift` references a prebuilt `KotlinresultKit.xcframework`
-release asset by URL + checksum — no Gradle build and no authentication required.

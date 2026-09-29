@@ -575,7 +575,7 @@ def render_pr_body(plan: Plan, section: str) -> str:
     return f"""\
 Merging this PR releases **{plan.next}** (current: {plan.current}; {how}).
 
-The Release workflow then publishes to Maven Central, creates the `v{plan.next}` GitHub release with the XCFramework for SPM, and deploys the docs site.
+The Release workflow then publishes to Maven Central, tags `v{plan.next}` with a GitHub release, and deploys the docs site.
 
 | Change | Title | Description |
 | --- | --- | --- |

@@ -1,39 +1,30 @@
 # Sample apps
 
-Four samples that consume the `:kotlinresult` library across every target. They're demo
-scaffolding — not published, not in the library check gate.
+Three samples that consume the `:kotlinresult` library. They're demo
+scaffolding — not published, and outside lint and the library check gate.
 
 | App | Path | Consumes the library via |
 |---|---|---|
-| iOS | `apps/ios` | SPM local binary target (root `Package.swift`) |
-| macOS | `apps/macos` | SPM local binary target (root `Package.swift`) |
+| Apple consumer | `apps/apple-consumer` (`:apple-consumer`) | Gradle project dependency, `export`ed into its framework |
 | Android | `apps/android` (`:androidApp`) | Gradle project dependency (`project(":kotlinresult")`) |
 | JVM CLI | `apps/jvm-cli` (`:jvm-cli`) | Gradle project dependency (`project(":kotlinresult")`) |
 
-## Apple apps (iOS / macOS)
+## Apple consumer
 
-The `.xcodeproj` files are **generated** from `project.yml` via xcodegen and are
-gitignored — the YAML is the source of truth. Xcode never runs Gradle; it
-consumes the library as a local Swift Package (the root `Package.swift`) whose
-binary target is the XCFramework Gradle builds.
+`:kotlinresult` ships no framework: Swift reaches it only through a KMP
+library's own framework. `:apple-consumer` stands in for such a library — it
+applies SKIE, depends on `:kotlinresult` with `api`, and `export`s it, exactly
+as the README's "Using it from a KMP library" asks. Its `src/appleMain/swift`
+wraps a small Kotlin API with the Swift helpers, and `swift/main.swift` checks
+them at runtime:
 
 ```bash
-# Rebuild the debug XCFramework, point Package.swift at it, regenerate the
-# .xcodeproj, and open Xcode:
-mise run open:ios       # or: mise run open:macos
-
-# After editing Kotlin, re-run to pick up the changes:
-mise run spm:dev
-
-# Before committing, restore the committed Package.swift:
-mise run spm:restore
+mise run build:swift    # link the debug frameworks (macOS + iOS simulator)
+mise run test:swift     # …then compile + run swift/main.swift against the macOS one
 ```
 
-Requires `xcodegen` (`brew install xcodegen`; mise provisions it via `mise install`)
-and a recent Xcode that SKIE supports.
-
-Add the platform capabilities your library needs to each app's `project.yml`
-(Info.plist keys, entitlements) — the templates ship minimal.
+CI's Apple leg runs `test:swift`: it's the only place this repo compiles the
+Swift `:kotlinresult` bundles into its klibs.
 
 ## Android
 

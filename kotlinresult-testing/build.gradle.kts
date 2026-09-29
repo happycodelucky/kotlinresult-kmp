@@ -7,10 +7,8 @@
  * `kotlinresult.publish`. Consumers wire it on `testImplementation` (or KMP
  * `commonTest` deps); the production `:kotlinresult` artifact does not depend on it.
  *
- * No XCFramework and no SKIE `produceDistributableFramework()`: test code is
- * consumed as KMP klibs from Maven Central, not via SPM. The Apple targets exist
- * so KMP consumers can resolve this module from their Apple test source sets, but
- * we don't ship a binary framework for it.
+ * Like `:kotlinresult`, klibs only: the Apple targets exist so KMP consumers can
+ * resolve this module from their Apple test source sets.
  */
 
 plugins {
@@ -36,19 +34,6 @@ kotlin {
 
         jvmTest.dependencies {
             implementation(kotlin("test"))
-        }
-    }
-}
-
-// Export :kotlinresult into this module's framework. SKIE compiles the bundled
-// Swift of every linked klib — including :kotlinresult's KotlinResult+Swift.swift
-// — into each framework, and that file only compiles where `KotlinResult` keeps
-// its plain Swift name, i.e. where :kotlinresult is exported. Every framework that
-// links :kotlinresult needs this (README "Using it from a KMP library").
-kotlin {
-    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
-        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
-            export(project(":kotlinresult"))
         }
     }
 }
