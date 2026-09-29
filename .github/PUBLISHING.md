@@ -1,13 +1,11 @@
 # Publishing
 
-KotlinResult ships through one channel, **Maven Central**, from
-`.github/workflows/release.yml`: the Android AAR, the jvm jar,
-`kotlinMultiplatform` metadata and per-target klibs, for Gradle / KMP consumers.
-It's a building block for KMP libraries, so there is no XCFramework or Swift
-package: Swift gets it inside the framework of the library that exports it, and
-the Apple klibs carry the SKIE-bundled Swift helpers for that framework to
-compile. Each release is also tagged `vX.Y.Z` with a GitHub Release holding its
-notes (no assets).
+KotlinResult ships to **Maven Central** from `.github/workflows/release.yml`:
+the Android AAR, the jvm jar, `kotlinMultiplatform` metadata and per-target
+klibs, for Gradle / KMP consumers. Swift gets it inside the framework of the
+library that exports it; the Apple klibs carry the SKIE-bundled Swift helpers
+for that framework to compile. Each release is also tagged `vX.Y.Z` with a
+GitHub Release holding its notes.
 
 ## Maven Central
 

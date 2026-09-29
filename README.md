@@ -9,8 +9,7 @@
 `kotlin.Result` for Kotlin Multiplatform, usable from Swift.
 
 It's a building block for **KMP libraries**: Swift reaches it through your
-library's framework, not on its own — so it ships on Maven Central only, with no
-XCFramework or Swift package.
+library's framework.
 
 `kotlin.Result` is a value class, and Kotlin/Native's Objective-C export erases
 it to an untyped `Any?`, so a KMP library can't return one to Swift. KotlinResult
@@ -135,9 +134,6 @@ kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", versio
 implementation(libs.kotlinresult)
 ```
 <!-- x-release-version-end -->
-
-There is no Swift package: an iOS or macOS app gets `KotlinResult` from the KMP
-library that uses it, exported into that library's framework.
 
 ## Development
 

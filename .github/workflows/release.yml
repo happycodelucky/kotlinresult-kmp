@@ -1,11 +1,9 @@
 name: Release
 
-# One distribution channel: Maven Central (vanniktech plugin) — Android AAR,
-# jvm jar, kotlinMultiplatform metadata, per-target klibs (the Apple ones carry
-# the bundled Swift). For Gradle / KMP consumers; Swift reaches this library
-# only through a consumer's framework, so there is no XCFramework or SPM
-# package (CLAUDE.md §8). Each release is then tagged vX.Y.Z and gets a GitHub
-# Release holding its changelog notes (no assets).
+# Publishes to Maven Central (vanniktech plugin) — Android AAR, jvm jar,
+# kotlinMultiplatform metadata, per-target klibs (the Apple ones carry the
+# bundled Swift) — then tags vX.Y.Z and creates a GitHub Release holding its
+# changelog notes (CLAUDE.md §8).
 #
 # --- How a release starts ----------------------------------------------------
 #
