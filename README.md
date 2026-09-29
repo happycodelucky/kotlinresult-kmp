@@ -1,50 +1,78 @@
 # KotlinResult
 
-![iOS · macOS via KMP](https://img.shields.io/badge/iOS%20%C2%B7%20macOS-via%20KMP-blue.svg?style=for-the-badge&logo=apple)
+[![Maven Central](https://img.shields.io/maven-central/v/com.happycodelucky.kotlinresult/kotlinresult?style=for-the-badge&logo=apachemaven&label=Maven%20Central)](https://central.sonatype.com/artifact/com.happycodelucky.kotlinresult/kotlinresult)
+[![CI](https://img.shields.io/github/actions/workflow/status/happycodelucky/kotlinresult-kmp/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/happycodelucky/kotlinresult-kmp/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](LICENSE)
+
+![iOS](https://img.shields.io/badge/iOS-arm64-blue.svg?style=for-the-badge&logo=apple)
+![macOS](https://img.shields.io/badge/macOS-arm64-blue.svg?style=for-the-badge&logo=apple)
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white)
 ![JVM 21+](https://img.shields.io/badge/JVM-21%2B-orange.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Kotlin 2.4](https://img.shields.io/badge/Kotlin-2.4-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
-![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)
 
-`kotlin.Result` for Kotlin Multiplatform, usable from Swift.
-
-It's a building block for **KMP libraries**: Swift reaches it through your
-library's framework.
+`kotlin.Result` for Kotlin Multiplatform, usable from Swift — for KMP libraries
+whose APIs return results to Swift callers.
 
 `kotlin.Result` is a value class, and Kotlin/Native's Objective-C export erases
-it to an untyped `Any?`, so a KMP library can't return one to Swift. KotlinResult
-is `com.happycodelucky.kotlinresult.Result<T>`: a thin reference class that wraps
-`kotlin.Result` and forwards to it.
+it to an untyped `Any?`, so a KMP library can't return one to Swift.
+KotlinResult's `Result<T>` is a thin reference class that wraps `kotlin.Result`
+and forwards to it:
 
-- **Kotlin** gets the stdlib `Result` API and behaviour (`isSuccess`,
+- **Kotlin** gets the stdlib `Result` API and behaviour — `isSuccess`,
   `getOrThrow`, `fold`, `map`, `recover`, `onFailure`, … with the stdlib's
-  contracts) as **members** — no per-operator imports — plus `toStdlibResult()` /
-  `toResult()`. One difference: `getOrElse`, `getOrDefault`, `recover` and
-  `recoverCatching` return `T`, not any supertype of it (a member can't express
-  that bound); widen with `fold` or `getOrNull() ?: default`.
-- **Swift** sees it as **`KotlinResult<T>`** (next to `KotlinInt`, `KotlinUnit`, …,
-  never shadowing Swift's `Result`) with bundled Swift helpers: `try r.get()`,
-  `let s: String = try r.get()`, `r.result(as:)` → `Swift.Result`. A failure is
-  thrown as the Kotlin exception itself, so Swift catches it by class and
-  switches exhaustively with SKIE's `onEnum(of:)`.
-- **Structured concurrency:** a `Result` is a plain value — nothing is classified
-  "fatal", and cancellation is never captured. Let `CancellationException`
-  propagate and SKIE delivers it to Swift as `CancellationError`.
-- **No runtime dependencies** beyond the Kotlin stdlib.
+  contracts — as members, so there's nothing to import beyond `Result`.
+- **Swift** sees `KotlinResult<T>` with helpers: `try r.get()` returns the value
+  or throws the Kotlin exception itself, and `r.result(as:)` gives a
+  `Swift.Result`.
+- **Structured concurrency** is left alone: nothing is classified "fatal", and
+  cancellation is never captured into a result.
+- **No dependencies** beyond the Kotlin standard library.
 
-## Modules
+## Install
 
-| Module | Coordinate | What it is |
-|--------|-----------|-----------|
-| `:kotlinresult` | `com.happycodelucky.kotlinresult:kotlinresult` | `Result<T>` + its bundled Swift. |
-| `:kotlinresult-testing` | `com.happycodelucky.kotlinresult:kotlinresult-testing` | `assertSuccess()` / `assertFailure<E>()` for tests. |
+<!-- x-release-version-start -->
+```kotlin
+// gradle/libs.versions.toml
+[libraries]
+kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "1.0.1" }
+kotlinresult-testing = { module = "com.happycodelucky.kotlinresult:kotlinresult-testing", version = "1.0.1" }
 
-## Quick example
+// build.gradle.kts
+commonMain.dependencies { api(libs.kotlinresult) }                  // it's in your public API
+commonTest.dependencies { implementation(libs.kotlinresult.testing) } // assertSuccess / assertFailure
+```
+<!-- x-release-version-end -->
 
-### Defining an API (Kotlin, `commonMain`)
+<a id="using-it-from-a-kmp-library-required-setup"></a>
 
-Return a `Result<T>`, failing with the specific exceptions you handle — ideally a
-sealed hierarchy, so callers can match every case:
+### Apple frameworks: export it
+
+Swift reaches `KotlinResult` through your library's framework. Build that
+framework with [SKIE](https://skie.touchlab.co), and **`export` KotlinResult into
+it**:
+
+```kotlin
+kotlin {
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
+            export(libs.kotlinresult)
+        }
+    }
+}
+```
+
+The Swift helpers ship inside the library, and SKIE compiles them into your
+framework — but only where `KotlinResult` keeps its plain Swift name, which the
+export guarantees. Without it, the link fails with
+`cannot find type 'KotlinResult' in scope`. Don't declare your own
+`extension KotlinThrowable: Error`; KotlinResult provides it.
+
+## Usage
+
+### Define an API
+
+Return a `Result<T>`, failing with the exceptions you handle — ideally a sealed
+hierarchy, so callers can match every case:
 
 ```kotlin
 import com.happycodelucky.kotlinresult.Result
@@ -60,10 +88,12 @@ fun parsePort(text: String): Result<Int> {
 }
 ```
 
-### Using it from Kotlin
+In files that import it, `Result` means KotlinResult's; write the stdlib type as
+`kotlin.Result`. Convert between them with `toStdlibResult()` and `toResult()`.
 
-The same API as `kotlin.Result` — every operator is a member, so there's nothing
-to import beyond `Result` itself:
+### Kotlin
+
+The `kotlin.Result` API, as members:
 
 ```kotlin
 parsePort("8080")
@@ -78,10 +108,14 @@ parsePort("8080")
 val port = parsePort(input).getOrDefault(8080)
 ```
 
-### Using it from Swift
+One difference from the stdlib: `getOrElse`, `getOrDefault`, `recover` and
+`recoverCatching` return `T`, not a supertype of it. To widen, use `fold` or
+`getOrNull() ?: default`.
 
-Through your library's framework (set up [below](#using-it-from-a-kmp-library-required-setup)),
-`get()` returns the value (name its type) or throws the Kotlin exception itself:
+### Swift
+
+`get()` returns the value — name its type — or throws the Kotlin exception, which
+you catch by class and switch over exhaustively with SKIE's `onEnum(of:)`:
 
 ```swift
 do {
@@ -95,78 +129,48 @@ do {
 }
 ```
 
-## Using it from a KMP library (required setup)
+- `try result.get()` on a `KotlinResult<KotlinUnit>` just returns or throws.
+- `result.get(as: Int.self)` names the type inline, and `result.result(as: Int.self)`
+  gives a `Swift.Result<Int, any Error>`.
+- A value of the wrong type throws `KotlinResultTypeMismatchError`.
+- Swift task cancellation reaches Kotlin as coroutine cancellation and comes
+  back as `CancellationError`, never as a failed result.
 
-Depend on it with `api` (it's in your public API) and **`export` it into every
-Apple framework that links it**:
+## Testing
+
+`kotlinresult-testing` adds assertions that work with any test framework
+(kotlin.test, JUnit, Kotest):
 
 ```kotlin
-kotlin {
-    sourceSets.commonMain.dependencies { api("com.happycodelucky.kotlinresult:kotlinresult:<version>") }
-
-    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
-        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework>().configureEach {
-            export("com.happycodelucky.kotlinresult:kotlinresult:<version>")
-        }
-    }
-}
+val port = parsePort("8080").assertSuccess()                            // the value, or fails with the stack trace
+val error = parsePort("nope").assertFailure<PortException.NotANumber>() // the exception, typed
 ```
 
-The Swift helpers ship as SKIE-bundled Swift inside the klib, and SKIE compiles
-the bundled Swift of *every* linked klib into your framework. That file only
-compiles where `KotlinResult` keeps its plain name — i.e. where the module is
-exported. Without the export the framework link fails with
-`cannot find type 'KotlinResult' in scope` in `bundled.kotlinresult.KotlinResult+Swift.swift`.
-Your framework needs SKIE; don't declare your own `extension KotlinThrowable: Error`
-(this library provides it).
+In Swift, build a result to return from a fake:
 
-## Install
-
-### Gradle (KMP / Android / JVM)
-
-<!-- x-release-version-start -->
-```kotlin
-// gradle/libs.versions.toml
-[libraries]
-kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "1.0.1" }
-
-// build.gradle.kts (commonMain)
-implementation(libs.kotlinresult)
-```
-<!-- x-release-version-end -->
-
-## Development
-
-Everything runs through [mise](https://mise.jdx.dev):
-
-```bash
-brew install mise
-mise trust && mise install
-
-mise run check         # ktlint + detekt + every test target — the done gate
-mise run test:jvm      # fast inner loop
-mise run build:src     # assemble the library
-mise run test:swift    # link a consumer framework that exports it + run the Swift helpers
-mise tasks             # full task list
+```swift
+let ok = KotlinResult<NSString>(value: "hi")
+let failed = KotlinResult<KotlinUnit>(failure: KotlinThrowable(message: "boom"))
 ```
 
-See [`CLAUDE.md`](CLAUDE.md) for conventions and [`CONTRIBUTING.md`](CONTRIBUTING.md)
-to get started.
+## Requirements
 
-### One-time CI setup
+| | |
+|---|---|
+| Kotlin | 2.4 |
+| JVM | 21+. Code that calls `Result`'s inline members (`fold`, `map`, `getOrElse`, …) must compile with `jvmTarget` 21 or higher. |
+| Android | `minSdk` 30; compile against SDK 34+. |
+| iOS / macOS | `iosArm64`, `iosSimulatorArm64`, `macosArm64`, through your framework (built with SKIE, exporting KotlinResult). Your framework sets the minimum OS. |
 
-- **GitHub Pages (docs site):** the Docs workflow deploys `docs/` to Pages
-  after each successful release (pushes to `main` only build it). It
-  auto-enables Pages on first run (`configure-pages` with `enablement: true`),
-  which needs **Settings → Actions → General → Workflow permissions → Read and
-  write**. If your org blocks auto-enablement, enable it manually:
-  **Settings → Pages → Source: GitHub Actions**.
-- **Releases:** set the four Maven Central credentials on the
-  `continuous-deployment` environment, and let the release PR be opened:
-  **Settings → Actions → General → Allow GitHub Actions to create and approve
-  pull requests** (or configure a GitHub App) — see
-  [`.github/PUBLISHING.md`](.github/PUBLISHING.md). Every PR then carries a
-  changeset (`mise run changeset`; [`.changeset/README.md`](.changeset/README.md)).
+## Documentation
+
+The [documentation site](https://happycodelucky.github.io/kotlinresult-kmp/) has
+guides, per-platform notes, the changelog, and the
+[API reference](https://happycodelucky.github.io/kotlinresult-kmp/reference/).
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 

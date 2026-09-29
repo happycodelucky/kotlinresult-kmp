@@ -14,7 +14,7 @@ scaffolding — not published, and outside lint and the library check gate.
 `:kotlinresult` ships no framework: Swift reaches it only through a KMP
 library's own framework. `:apple-consumer` stands in for such a library — it
 applies SKIE, depends on `:kotlinresult` with `api`, and `export`s it, exactly
-as the README's "Using it from a KMP library" asks. Its `src/appleMain/swift`
+as the README's "Apple frameworks: export it" asks. Its `src/appleMain/swift`
 wraps a small Kotlin API with the Swift helpers, and `swift/main.swift` checks
 them at runtime:
 

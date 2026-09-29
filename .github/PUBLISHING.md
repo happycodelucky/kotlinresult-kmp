@@ -103,6 +103,14 @@ workflows, so CI wouldn't run on the release PR by itself. Pick one:
 
 If `main` requires status checks, add **Changeset** alongside CI's jobs.
 
+### One-time setup for the docs site
+
+The Docs workflow deploys `docs/` to GitHub Pages after each successful stable
+release (pushes to `main` only build it). It enables Pages on its first run
+(`configure-pages` with `enablement: true`), which needs **Settings → Actions →
+General → Workflow permissions → Read and write**. If that's blocked, enable
+Pages by hand: **Settings → Pages → Source: GitHub Actions**.
+
 ## Releasing by hand (`mise run publish:maven`)
 
 The CI flow above is the canonical path. `mise run publish:maven`
