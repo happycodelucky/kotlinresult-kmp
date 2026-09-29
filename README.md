@@ -34,8 +34,8 @@ and forwards to it:
 ```kotlin
 // gradle/libs.versions.toml
 [libraries]
-kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "1.0.1" }
-kotlinresult-testing = { module = "com.happycodelucky.kotlinresult:kotlinresult-testing", version = "1.0.1" }
+kotlinresult = { module = "com.happycodelucky.kotlinresult:kotlinresult", version = "1.1.0" }
+kotlinresult-testing = { module = "com.happycodelucky.kotlinresult:kotlinresult-testing", version = "1.1.0" }
 
 // build.gradle.kts
 commonMain.dependencies { api(libs.kotlinresult) }                  // it's in your public API
